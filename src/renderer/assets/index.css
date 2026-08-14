@@ -1,0 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 6% 4%;
+    --foreground: 240 5% 90%;
+    --card: 240 6% 6%;
+    --card-foreground: 240 5% 90%;
+    --popover: 240 6% 6%;
+    --popover-foreground: 240 5% 90%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 240 5% 65%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 45%;
+    --accent: 240 4% 16%;
+    --accent-foreground: 240 5% 90%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 160 84% 39%;
+    --radius: 0.625rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(240 4% 20%);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(240 4% 28%);
+}
+
+/* Hide scrollbar for scroll-area variant */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* xterm overrides */
+.xterm {
+  padding: 4px;
+}
+
+.xterm-viewport::-webkit-scrollbar {
+  width: 6px;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background: hsl(240 4% 20%);
+  border-radius: 3px;
+}
+
+/* Select dropdown styling for dark theme */
+select {
+  background-color: hsl(240 6% 8%);
+  color: hsl(240 5% 90%);
+}
+
+select option {
+  background-color: hsl(240 6% 8%);
+  color: hsl(240 5% 90%);
+}
+
+/* Drag region */
+[style*="-webkit-app-region: drag"] {
+  -webkit-app-region: drag;
+}
+
+[style*="-webkit-app-region: no-drag"] {
+  -webkit-app-region: no-drag;
+}

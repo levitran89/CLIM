@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+
+# Build output
+out/
+dist/
+
+# Electron packaging cache
+*.asar
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Optional npm cache
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Test coverage
+.nyc_output/
+coverage/
+
+# Temp
+tmp/
+temp/
+
+# GitHub
+.github/
