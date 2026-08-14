@@ -39,6 +39,8 @@ export function PortList(): React.JSX.Element {
       if (res.success) {
         toast.success(`Đã đóng port ${port} thành công`)
         fetchPortsAndCommands() // refresh
+      } else if (res.requiresAdmin) {
+        toast.error('Không có quyền. Vui lòng chạy CLIM với tư cấu hành trình viên.', { duration: 5000, action: { label: 'Chi tiết', onClick: () => alert(res.error || 'Access denied') } })
       } else {
         toast.error(`Không thể đóng port ${port}: ${res.error}`)
       }

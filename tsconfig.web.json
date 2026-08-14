@@ -4,11 +4,12 @@
     "composite": true,
     "jsx": "react-jsx",
     "outDir": "./out/renderer",
-    "baseUrl": ".",
+        "baseUrl": ".",
     "paths": {
-      "@/*": ["src/renderer/*"]
+      "@/*": ["src/renderer/*"],
+      "@shared/*": ["src/shared/*"]
     },
     "types": ["node"]
   },
-  "include": ["src/renderer/**/*"]
+  "include": ["src/renderer/**/*", "src/shared/**/*"]
 }

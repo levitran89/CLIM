@@ -77,9 +77,9 @@ export type IpcApi = {
     maximize: () => void
     close: () => void
   }
-  system: {
+    system: {
     saveFile: (content: string, defaultName: string) => Promise<string | null>
     getPorts: () => Promise<PortInfo[]>
-    killPort: (pid: number) => Promise<{ success: boolean; error?: string }>
+    killPort: (pid: number) => Promise<{ success: boolean; error?: string; requiresAdmin?: boolean }>
   }
 }

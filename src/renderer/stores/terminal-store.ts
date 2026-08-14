@@ -9,7 +9,7 @@ interface TerminalStore {
   // Actions
   addSession: (session: TerminalSession) => void
   removeSession: (id: string) => void
-  setActiveSession: (id: string) => void
+    setActiveSession: (id: string | null) => void
   updateSession: (id: string, updates: Partial<TerminalSession>) => void
   renameSession: (id: string, title: string) => void
   setSplitMode: (mode: 'none' | 'horizontal' | 'vertical') => void
@@ -40,7 +40,7 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
       return { sessions: newSessions, activeSessionId: newActive }
     }),
 
-  setActiveSession: (id) => set({ activeSessionId: id }),
+     setActiveSession: (id: string | null) => set({ activeSessionId: id }),
 
   updateSession: (id, updates) =>
     set((state) => ({

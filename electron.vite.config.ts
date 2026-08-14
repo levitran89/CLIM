@@ -10,9 +10,10 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()]
   },
   renderer: {
-    resolve: {
+        resolve: {
       alias: {
-        '@': resolve('src/renderer')
+        '@': resolve('src/renderer'),
+        '@shared': resolve('src/shared')
       }
     },
     plugins: [react()]
