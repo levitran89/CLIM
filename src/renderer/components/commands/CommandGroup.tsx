@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import { ChevronDown, ChevronRight, Folder } from 'lucide-react'
 import { CommandCard } from './CommandCard'
+import { twoColumnListClass } from '@/lib/utils'
 import type { Command } from '../../../shared/types'
 
 interface CommandGroupProps {
   category: string
   commands: Command[]
+  columns?: 1 | 2
   onRun: (command: Command) => void
   onEdit: (command: Command) => void
   onDelete: (id: string) => void
@@ -14,6 +16,7 @@ interface CommandGroupProps {
 export function CommandGroup({
   category,
   commands,
+  columns = 1,
   onRun,
   onEdit,
   onDelete
@@ -35,7 +38,11 @@ export function CommandGroup({
       </button>
 
       {isOpen && (
-        <div className="ml-2 space-y-0.5 animate-fade-in">
+        <div
+          className={`ml-2 animate-fade-in ${
+            columns === 2 ? twoColumnListClass : 'space-y-0.5'
+          }`}
+        >
           {commands.map((cmd) => (
             <CommandCard
               key={cmd.id}

@@ -1,0 +1,25 @@
+appId: com.clim.desktop
+productName: CLIM
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+  - "!**/*.map"
+asar: true
+asarUnpack:
+  - "**/node_modules/node-pty/**"
+npmRebuild: true
+win:
+  executableName: CLIM
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: CLIM
+  artifactName: ${productName}-${version}-Setup.${ext}

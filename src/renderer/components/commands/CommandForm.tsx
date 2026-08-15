@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { X, Upload, Save } from 'lucide-react'
+import { getDirFromPath } from '@/lib/path-utils'
 import { toast } from 'sonner'
 import type { Command } from '../../../shared/types'
 
@@ -86,12 +87,9 @@ export function CommandForm({
         if (ext !== '.txt') setShell(scriptShell)
 
         // Extract and set the working directory
-        const dirIndex = filePath.lastIndexOf('\\')
-        if (dirIndex > -1) {
-          const dirPath = filePath.substring(0, dirIndex)
-          if (dirPath && dirPath !== filePath) {
-            setWorkingDirectory(dirPath)
-          }
+        const dirPath = getDirFromPath(filePath)
+        if (dirPath && dirPath !== filePath) {
+          setWorkingDirectory(dirPath)
         }
 
         toast.success(`Đã lấy đường dẫn file "${fileName}"`)

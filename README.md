@@ -13,7 +13,7 @@
 - ⭐ **Favorites**: Pin your most-used commands for quick access.
 - 🚀 **Parallel Terminals**: Launch commands directly in an embedded terminal (PowerShell, CMD, WSL).
 - ✂️ **Split View**: Run multiple terminals side-by-side (horizontal/vertical).
-- 🌐 **Port Manager** *(Windows)*: View active listening ports, inspect process details, and safely kill processes.
+- 🌐 **Port Manager** *(Windows)*: View active listening ports, inspect process details, and safely kill processes. Handles permission errors gracefully with clear guidance for administrator access. Cross-platform support planned for Linux/macOS.
 - 💾 **Import / Export**: Export your command library to JSON or import existing scripts (.bat, .ps1, .txt).
 - 🌙 **Dark Theme**: Designed for long development sessions.
 
@@ -72,6 +72,19 @@ npm run dev
 
 This will start the Electron app with hot-reloading enabled.
 
+### Running Tests
+
+```bash
+# Run tests in watch mode
+npm run test
+
+# Run tests once
+npm run test:run
+
+# Run tests with coverage
+npm run test:coverage
+```
+
 ### Build for Production
 
 ```bash
@@ -79,6 +92,12 @@ npm run build
 ```
 
 The output will be in the `dist/` directory.
+
+To create a Windows installer:
+
+```bash
+npm run build:win
+```
 
 ---
 

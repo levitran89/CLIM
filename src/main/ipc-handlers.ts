@@ -3,11 +3,12 @@ import Store from 'electron-store'
 import { writeFile } from 'fs/promises'
 import { ptyManager } from './pty-manager'
 import { portManager } from './port-manager'
-import type { Command, CreateTerminalOptions } from '../shared/types'
+import type { Command, CommandSequence, CreateTerminalOptions } from '../shared/types'
 
-const store = new Store<{ commands: Command[] }>({
+const store = new Store<{ commands: Command[], sequences: CommandSequence[] }>({
   defaults: {
-    commands: []
+    commands: [],
+    sequences: []
   }
 })
 
@@ -136,7 +137,32 @@ export function registerIpcHandlers(): void {
     return await portManager.getPorts()
   })
 
-  ipcMain.handle('system:killPort', async (_event, pid: number) => {
+    ipcMain.handle('system:killPort', async (_event, pid: number) => {
     return await portManager.killPort(pid)
+  })
+
+  // ─── Sequence Channels ────────────────────────────────────────
+
+  ipcMain.handle('sequence:list', async () => {
+    return store.get('sequences', [])
+  })
+
+  ipcMain.handle('sequence:save', async (_event, sequence: CommandSequence) => {
+    const sequences = store.get('sequences', [])
+    const index = sequences.findIndex((s: CommandSequence) => s.id === sequence.id)
+    if (index >= 0) {
+      sequences[index] = sequence
+    } else {
+      sequences.push(sequence)
+    }
+    store.set('sequences', sequences)
+  })
+
+  ipcMain.handle('sequence:delete', async (_event, id: string) => {
+    const sequences = store.get('sequences', [])
+    store.set(
+      'sequences',
+      sequences.filter((s: CommandSequence) => s.id !== id)
+    )
   })
 }
