@@ -4,6 +4,15 @@ import { is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc-handlers'
 import { ptyManager } from './pty-manager'
 
+// Silence Chromium background network calls (Safe Browsing, Component Updater,
+// Variations) that fail TLS handshake on offline/proxied machines. CLIM is a
+// fully local app and needs no outbound connections.
+app.commandLine.appendSwitch('disable-background-networking')
+app.commandLine.appendSwitch(
+  'disable-features',
+  'CertificateTransparency,OptimizationHints,DocumentReporting'
+)
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1400,

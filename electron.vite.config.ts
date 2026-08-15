@@ -10,7 +10,8 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()]
   },
   renderer: {
-        resolve: {
+    server: { port: 5273, strictPort: true },
+    resolve: {
       alias: {
         '@': resolve('src/renderer'),
         '@shared': resolve('src/shared')

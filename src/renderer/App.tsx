@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react'
 import { TitleBar } from '@/components/layout/TitleBar'
-import { Sidebar } from '@/components/layout/Sidebar'
+import { MainContent } from '@/components/layout/MainContent'
 import { StatusBar } from '@/components/layout/StatusBar'
-import { TerminalGrid } from '@/components/terminal/TerminalGrid'
 import { useTerminalStore } from '@/stores/terminal-store'
 
 import { Toaster, toast } from 'sonner'
@@ -34,12 +33,8 @@ export default function App(): React.JSX.Element {
     <div className="flex flex-col h-screen w-screen bg-zinc-950 text-zinc-100 overflow-hidden">
       <TitleBar />
 
-      <div className="flex flex-1 min-h-0">
-        <Sidebar />
-
-        <main className="flex-1 flex flex-col min-w-0">
-          <TerminalGrid />
-        </main>
+      <div className="flex-1 min-h-0">
+        <MainContent />
       </div>
 
       <StatusBar />

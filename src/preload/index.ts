@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { IpcApi, CreateTerminalOptions, Command } from '../shared/types'
+import type { IpcApi, CreateTerminalOptions, Command, CommandSequence } from '../shared/types'
 
 const api: IpcApi = {
   terminal: {
@@ -58,12 +58,18 @@ const api: IpcApi = {
     maximize: () => ipcRenderer.send('window:maximize'),
     close: () => ipcRenderer.send('window:close')
   },
-  
+
   system: {
-    saveFile: (content: string, defaultName: string) => 
+    saveFile: (content: string, defaultName: string) =>
       ipcRenderer.invoke('system:saveFile', { content, defaultName }),
     getPorts: () => ipcRenderer.invoke('system:getPorts'),
     killPort: (pid: number) => ipcRenderer.invoke('system:killPort', pid)
+  },
+
+  sequences: {
+    list: () => ipcRenderer.invoke('sequence:list'),
+    save: (sequence: CommandSequence) => ipcRenderer.invoke('sequence:save', sequence),
+    delete: (id: string) => ipcRenderer.invoke('sequence:delete', id)
   }
 }
 

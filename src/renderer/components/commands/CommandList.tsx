@@ -6,12 +6,19 @@ import { CommandForm } from './CommandForm'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, Plus, Download, Upload } from 'lucide-react'
+import { Search, Plus, Download, Upload, Columns2, Rows3 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Command } from '../../../shared/types'
-import { v4 as uuidv4 } from 'uuid'
 
-export function CommandList(): React.JSX.Element {
+const COLUMNS_KEY = 'clim-commands-columns'
+
+interface CommandListProps {
+  onNavigateToTerminal?: () => void
+}
+
+export function CommandList({
+  onNavigateToTerminal
+}: CommandListProps): React.JSX.Element {
   const {
     searchQuery,
     setSearchQuery,
@@ -29,13 +36,20 @@ export function CommandList(): React.JSX.Element {
 
   const [formOpen, setFormOpen] = useState(false)
   const [editingCommand, setEditingCommand] = useState<Command | null>(null)
+  const [columns, setColumns] = useState<1 | 2>(() => {
+    const saved = localStorage.getItem(COLUMNS_KEY)
+    return saved === '2' ? 2 : 1
+  })
 
   useEffect(() => {
     loadCommands()
   }, [loadCommands])
 
+  useEffect(() => {
+    localStorage.setItem(COLUMNS_KEY, String(columns))
+  }, [columns])
+
   const handleRun = async (command: Command): Promise<void> => {
-    // Check if command is already running
     const existingSession = sessions.find(
       (s) => s.commandId === command.id && s.status === 'running'
     )
@@ -44,7 +58,7 @@ export function CommandList(): React.JSX.Element {
         useTerminalStore.getState().updateSession(existingSession.id, { isBackground: false })
       }
       setActiveSession(existingSession.id)
-      toast.info(`Đã chuyển đến terminal của "${command.name}"`)
+      onNavigateToTerminal?.()
       return
     }
 
@@ -55,7 +69,8 @@ export function CommandList(): React.JSX.Element {
       title: command.name,
       commandId: command.id
     })
-    // Send the command to the terminal after a short delay for PTY to be ready
+    setActiveSession(sessionId)
+    onNavigateToTerminal?.()
     setTimeout(() => {
       window.api.terminal.input(sessionId, command.command + '\r\n')
     }, 500)
@@ -122,10 +137,8 @@ export function CommandList(): React.JSX.Element {
 
   const filtered = filteredCommands()
   const cats = categories()
+  const favorites = filtered.filter((c) => c.isFavorite)
 
-  const favorites = filtered.filter(c => c.isFavorite)
-
-  // Group commands by category
   const grouped = cats.reduce(
     (acc, cat) => {
       acc[cat] = filtered.filter((c) => c.category === cat && !c.isFavorite)
@@ -135,23 +148,10 @@ export function CommandList(): React.JSX.Element {
   )
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Search */}
-      <div className="p-3 space-y-2">
-        <div className="relative">
-          <Search
-            size={14}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
-          />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm kiếm lệnh..."
-            className="pl-8 h-8 text-xs bg-zinc-800/50 border-zinc-700/50"
-          />
-        </div>
-
-        <div className="flex gap-1">
+    <div className="flex flex-col h-full px-[50px]">
+      <div className="max-w-6xl w-full mx-auto flex flex-col h-full">
+        {/* Toolbar: Tạo mới | Tìm kiếm | Nhập | Xuất | Cột */}
+        <div className="p-3 flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -159,67 +159,94 @@ export function CommandList(): React.JSX.Element {
               setEditingCommand(null)
               setFormOpen(true)
             }}
-            className="flex-1 h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+            className="h-8 shrink-0 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
           >
             <Plus size={12} className="mr-1" />
             Tạo mới
           </Button>
+
+          <div className="relative flex-1 min-w-0">
+            <Search
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
+            />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm kiếm lệnh..."
+              className="pl-8 h-8 text-xs bg-zinc-800/50 border-zinc-700/50"
+            />
+          </div>
+
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-zinc-500"
+            className="h-8 w-8 shrink-0 text-zinc-500 hover:text-zinc-300"
             onClick={handleImport}
             title="Nhập file JSON cấu hình"
           >
-            <Upload size={12} />
+            <Upload size={14} />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-zinc-500"
+            className="h-8 w-8 shrink-0 text-zinc-500 hover:text-zinc-300"
             onClick={handleExport}
             title="Xuất file JSON"
           >
-            <Download size={12} />
+            <Download size={14} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-8 w-8 shrink-0 ${
+              columns === 2
+                ? 'text-emerald-400 hover:text-emerald-300'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+            onClick={() => setColumns((c) => (c === 1 ? 2 : 1))}
+            title={columns === 2 ? 'Hiển thị 1 cột' : 'Hiển thị 2 cột'}
+          >
+            {columns === 2 ? <Columns2 size={14} /> : <Rows3 size={14} />}
           </Button>
         </div>
+
+        <ScrollArea className="flex-1 px-1">
+          {favorites.length > 0 && (
+            <CommandGroup
+              key="favorites"
+              category="⭐ Lệnh ghim"
+              commands={favorites}
+              columns={columns}
+              onRun={handleRun}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          )}
+
+          {Object.entries(grouped).map(
+            ([cat, cmds]) =>
+              cmds.length > 0 && (
+                <CommandGroup
+                  key={cat}
+                  category={cat}
+                  commands={cmds}
+                  columns={columns}
+                  onRun={handleRun}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              )
+          )}
+
+          {filtered.length === 0 && (
+            <div className="text-center py-8 text-zinc-600 text-xs">
+              {searchQuery ? 'Không tìm thấy lệnh nào' : 'Chưa có lệnh nào'}
+            </div>
+          )}
+        </ScrollArea>
       </div>
 
-      {/* Command Groups */}
-      <ScrollArea className="flex-1 px-1">
-        {favorites.length > 0 && (
-          <CommandGroup
-            key="favorites"
-            category="⭐ Lệnh ghim"
-            commands={favorites}
-            onRun={handleRun}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        )}
-
-        {Object.entries(grouped).map(
-          ([cat, cmds]) =>
-            cmds.length > 0 && (
-              <CommandGroup
-                key={cat}
-                category={cat}
-                commands={cmds}
-                onRun={handleRun}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
-            )
-        )}
-
-        {filtered.length === 0 && (
-          <div className="text-center py-8 text-zinc-600 text-xs">
-            {searchQuery ? 'Không tìm thấy lệnh nào' : 'Chưa có lệnh nào'}
-          </div>
-        )}
-      </ScrollArea>
-
-      {/* Form Dialog */}
       <CommandForm
         open={formOpen}
         onOpenChange={(open) => {

@@ -73,6 +73,8 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
       pid: result.pid,
       status: 'running',
       commandId: options.commandId,
+      sequenceId: options.sequenceId,
+      sequenceStepId: options.sequenceStepId,
       createdAt: Date.now()
     }
 
