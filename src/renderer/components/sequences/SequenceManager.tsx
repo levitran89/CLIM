@@ -12,20 +12,26 @@ import {
   Pencil,
   Columns2,
   Rows3,
-  ListOrdered
+  ListOrdered,
+  Maximize2,
+  Minimize2
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { confirmAction } from '@/stores/confirm-store'
 import type { CommandSequence, SequenceRunMode } from '@shared/types'
 import { useSequenceStore } from '@/stores/sequence-store'
 import { SequenceForm, type SequenceFormData } from './SequenceForm'
 import { twoColumnListClass } from '@/lib/utils'
+import { useCommandRunner } from '@/components/providers/CommandRunnerProvider'
+import { useSettingsStore } from '@/stores/settings-store'
+import { useTranslation } from '@/stores/i18n-store'
 
-const COLUMNS_KEY = 'clim-sequences-columns'
+const LAYOUT_WIDTH_KEY = 'clim-sequences-layout-width'
 
 const runModeLabel: Record<SequenceRunMode, string> = {
-  none: 'Không chạy',
-  first: 'Chạy đầu',
-  all: 'Chạy tất cả'
+  none: 'Manual',
+  first: 'Run First',
+  all: 'Run All'
 }
 
 interface SequenceManagerProps {
@@ -35,13 +41,22 @@ interface SequenceManagerProps {
 export function SequenceManager({
   onNavigateToTerminal
 }: SequenceManagerProps): React.JSX.Element {
+  const { settings, updateSettings } = useSettingsStore()
+  const { t, language } = useTranslation()
   const [formOpen, setFormOpen] = useState(false)
   const [editingSequence, setEditingSequence] = useState<CommandSequence | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [columns, setColumns] = useState<1 | 2>(() => {
-    const saved = localStorage.getItem(COLUMNS_KEY)
-    return saved === '2' ? 2 : 1
+  const columns = settings.sequenceColumns || 2
+  const [layoutWidth, setLayoutWidth] = useState<'centered' | 'full'>(() => {
+    const saved = localStorage.getItem(LAYOUT_WIDTH_KEY)
+    return saved === 'full' ? 'full' : 'centered'
   })
+
+  const toggleLayoutWidth = () => {
+    const next = layoutWidth === 'centered' ? 'full' : 'centered'
+    setLayoutWidth(next)
+    localStorage.setItem(LAYOUT_WIDTH_KEY, next)
+  }
 
   const sequences = useSequenceStore((s) => s.sequences)
   const activeRun = useSequenceStore((s) => s.activeRun)
@@ -73,49 +88,29 @@ export function SequenceManager({
     try {
       if (editingSequence) {
         await updateSequence(editingSequence.id, data)
-        toast.success('Đã cập nhật dãy lệnh')
+        toast.success(language === 'en' ? 'Sequence updated' : 'Đã cập nhật dãy lệnh')
       } else {
         await addSequence(data)
-        toast.success('Đã thêm dãy lệnh mới')
+        toast.success(language === 'en' ? 'New sequence added' : 'Đã thêm dãy lệnh mới')
       }
       setFormOpen(false)
       setEditingSequence(null)
       await loadSequences()
     } catch {
-      toast.error('Lỗi khi lưu dãy lệnh')
+      toast.error(language === 'en' ? 'Failed to save sequence' : 'Lỗi khi lưu dãy lệnh')
     }
   }
 
-  const handleRunSequence = async (sequence: CommandSequence): Promise<void> => {
-    if (sequence.steps.length === 0) {
-      toast.error('Dãy lệnh trống')
-      return
-    }
-    if (activeRun) {
-      toast.error('Đang có dãy lệnh khác chạy. Hãy kết thúc trên tab Terminal trước.')
-      return
-    }
+  const { runSequence } = useCommandRunner()
 
-    try {
-      await startSequence(sequence)
-      onNavigateToTerminal?.()
-      const mode = sequence.runMode || 'first'
-      if (mode === 'none') {
-        toast.info(`Đã mở terminal cho "${sequence.name}". Chọn lệnh bên trái để chạy.`)
-      } else if (mode === 'first') {
-        toast.info(`Đã chạy lệnh đầu của "${sequence.name}"`)
-      } else {
-        toast.info(`Đã chạy tất cả lệnh của "${sequence.name}"`)
-      }
-    } catch {
-      toast.error('Không thể khởi chạy dãy lệnh')
-    }
+  const handleRunSequence = async (sequence: CommandSequence): Promise<void> => {
+    await runSequence(sequence, onNavigateToTerminal)
   }
 
   const handleStopSequence = async (): Promise<void> => {
     const name = sequences.find((s) => s.id === activeRun?.sequenceId)?.name
     await stopSequence()
-    toast.warning(name ? `Đã dừng dãy lệnh "${name}"` : 'Đã dừng dãy lệnh')
+    toast.warning(name ? (language === 'en' ? `Stopped sequence "${name}"` : `Đã dừng quy trình "${name}"`) : (language === 'en' ? 'Stopped sequence' : 'Đã dừng quy trình'))
   }
 
   const handleEditSequence = (seq: CommandSequence): void => {
@@ -124,76 +119,95 @@ export function SequenceManager({
   }
 
   const handleDeleteSequence = async (id: string): Promise<void> => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa dãy lệnh này không?')) {
+    const seq = sequences.find((s) => s.id === id)
+    const confirmed = await confirmAction({
+      title: language === 'en' ? 'Confirm delete sequence' : 'Xác nhận xóa quy trình',
+      description: seq?.name
+        ? (language === 'en' ? `Are you sure you want to delete sequence "${seq.name}" (${seq.steps.length} steps)? This action cannot be undone.` : `Bạn có chắc chắn muốn xóa quy trình "${seq.name}" (${seq.steps.length} bước) không? Thao tác này không thể hoàn tác.`)
+        : (language === 'en' ? 'Are you sure you want to delete this sequence?' : 'Bạn có chắc chắn muốn xóa quy trình này không?'),
+      confirmText: language === 'en' ? 'Delete sequence' : 'Xóa quy trình',
+      cancelText: t('common.cancel'),
+      variant: 'destructive'
+    })
+    if (confirmed) {
       await deleteSequence(id)
       await loadSequences()
-      toast.success('Đã xóa dãy lệnh')
+      toast.success(language === 'en' ? 'Sequence deleted successfully' : 'Đã xóa quy trình thành công')
     }
   }
 
   const toggleColumns = (): void => {
-    setColumns((c) => {
-      const next = c === 1 ? 2 : 1
-      localStorage.setItem(COLUMNS_KEY, String(next))
-      return next
-    })
+    updateSettings({ sequenceColumns: columns === 1 ? 2 : 1 })
   }
 
   return (
-    <div className="flex flex-col h-full px-[50px]">
-      <div className="max-w-6xl w-full mx-auto flex flex-col h-full">
-        <div className="p-3 flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setEditingSequence(null)
-              setFormOpen(true)
-            }}
-            className="h-8 shrink-0 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-          >
-            <Plus size={12} className="mr-1" />
-            Tạo mới
-          </Button>
+    <div className="flex flex-col h-full w-full bg-zinc-950 overflow-hidden">
+      <div className="px-4 sm:px-6 py-2.5 bg-zinc-900/50 border-b border-zinc-800/60 flex items-center gap-2.5 shrink-0">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setEditingSequence(null)
+            setFormOpen(true)
+          }}
+          className="h-9 shrink-0 text-sm font-semibold border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 px-3.5 gap-1.5 cursor-pointer shadow-sm"
+        >
+          <Plus size={15} />
+          {t('sequences.addSequence')}
+        </Button>
 
-          <div className="relative flex-1 min-w-0">
-            <Search
-              size={14}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
-            />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm dãy lệnh..."
-              className="pl-8 h-8 text-xs bg-zinc-800/50 border-zinc-700/50"
-            />
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-8 w-8 shrink-0 ${
-              columns === 2
-                ? 'text-emerald-400 hover:text-emerald-300'
-                : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-            onClick={toggleColumns}
-            title={columns === 2 ? 'Hiển thị 1 cột' : 'Hiển thị 2 cột'}
-          >
-            {columns === 2 ? <Columns2 size={14} /> : <Rows3 size={14} />}
-          </Button>
+        <div className="relative flex-1 min-w-0">
+          <Search
+            size={15}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
+          />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('sequences.searchPlaceholder')}
+            className="pl-9 h-9 text-sm bg-zinc-900/60 border-zinc-700/60 text-zinc-200 placeholder:text-zinc-500"
+          />
         </div>
 
-        <ScrollArea className="flex-1 px-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`h-9 w-9 shrink-0 ${
+            columns === 2
+              ? 'text-emerald-400 hover:text-emerald-300 bg-emerald-500/10'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+          }`}
+          onClick={toggleColumns}
+          title={columns === 2 ? t('common.oneColumn') : t('common.twoColumns')}
+        >
+          {columns === 2 ? <Columns2 size={16} /> : <Rows3 size={16} />}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`h-9 w-9 shrink-0 ${
+            layoutWidth === 'centered'
+              ? 'text-emerald-400 hover:text-emerald-300 bg-emerald-500/10'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+          }`}
+          onClick={toggleLayoutWidth}
+          title={layoutWidth === 'centered' ? t('common.fullWidth') : t('common.webWidth')}
+        >
+          {layoutWidth === 'centered' ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+        </Button>
+      </div>
+
+      <ScrollArea className="flex-1 min-h-0 w-full">
+        <div className={layoutWidth === 'centered' ? 'max-w-4xl mx-auto px-4 py-4 pb-12' : 'px-4 sm:px-6 py-4 pb-12'}>
           {filteredSequences.length === 0 ? (
-            <div className="text-center py-8 text-zinc-600 text-xs">
-              <List size={28} className="mx-auto mb-2 opacity-30" />
-              {searchQuery ? 'Không tìm thấy dãy lệnh nào' : 'Chưa có dãy lệnh nào'}
+            <div className="text-center py-12 text-zinc-500 text-sm">
+              <List size={32} className="mx-auto mb-2.5 opacity-40 text-zinc-400" />
+              {searchQuery ? 'Không tìm thấy quy trình nào phù hợp' : 'Chưa có quy trình nào được tạo'}
             </div>
           ) : (
             <div
               className={
-                columns === 2 ? `${twoColumnListClass} pb-2` : 'space-y-0.5 pb-2'
+                columns === 2 ? `${twoColumnListClass} pb-4` : 'space-y-2 pb-4'
               }
             >
               {filteredSequences.map((seq) => {
@@ -202,39 +216,41 @@ export function SequenceManager({
                 return (
                   <div
                     key={seq.id}
-                    className={`group px-3 py-2 rounded-lg transition-all duration-150 border ${
+                    className={`group p-3.5 rounded-xl transition-all duration-150 border cursor-pointer ${
                       isRunning
-                        ? 'bg-emerald-500/15 border-emerald-500/40'
-                        : 'border-transparent hover:bg-zinc-800/60 hover:border-zinc-700/30'
+                        ? 'bg-gradient-to-r from-emerald-950/40 to-zinc-900/90 border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30'
+                        : 'bg-zinc-950/70 border-zinc-800/80 hover:bg-zinc-900/90 hover:border-zinc-700/80 hover:shadow-sm'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start justify-between gap-2.5">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <ListOrdered size={12} className="shrink-0 text-violet-400" />
-                          <span className="text-sm font-medium text-zinc-200 truncate">
+                          <ListOrdered size={15} className="shrink-0 text-violet-400" />
+                          <span className="text-sm sm:text-base font-bold text-zinc-100 truncate">
                             {seq.name}
                           </span>
-                          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-sm bg-zinc-800 text-zinc-400">
+                          <span className="shrink-0 text-xs px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700/60 text-zinc-300 font-medium">
                             {runModeLabel[mode]}
                           </span>
                           {isRunning && (
-                            <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-sm font-medium bg-emerald-500/20 text-emerald-400">
-                              Đang chạy
+                            <span className="shrink-0 text-xs px-2 py-0.5 rounded-md font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              {language === 'en' ? 'Running' : 'Đang chạy'}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-zinc-500 truncate mt-1">
-                          {seq.steps.length} lệnh
-                          {seq.shell ? ` · ${seq.shell}` : ''}
+                        <p className="text-xs sm:text-sm text-zinc-400 truncate mt-1.5 leading-relaxed">
+                          <strong className="text-zinc-300 font-mono">
+                            {seq.steps.length} {language === 'en' ? (seq.steps.length === 1 ? 'command' : 'commands') : 'lệnh'}
+                          </strong>
+                          {seq.shell ? ` · Shell: ${seq.shell}` : ''}
                           {seq.description ? ` · ${seq.description}` : ''}
                         </p>
                         {(seq.tags || []).length > 0 && (
-                          <div className="flex gap-1 mt-1.5 flex-wrap">
-                            {(seq.tags || []).slice(0, 3).map((tag) => (
+                          <div className="flex gap-1.5 mt-2 flex-wrap">
+                            {(seq.tags || []).slice(0, 4).map((tag) => (
                               <span
                                 key={tag}
-                                className="text-[10px] px-1.5 py-0 h-4 inline-flex items-center bg-zinc-800 text-zinc-400 rounded"
+                                className="text-xs px-2 py-0.5 h-5 inline-flex items-center bg-zinc-800 text-zinc-300 border border-zinc-700/60 rounded-md font-medium"
                               >
                                 {tag}
                               </span>
@@ -244,7 +260,7 @@ export function SequenceManager({
                       </div>
 
                       <div
-                        className={`flex items-center gap-0.5 shrink-0 transition-opacity ${
+                        className={`flex items-center gap-1 shrink-0 transition-opacity ${
                           isRunning ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                         }`}
                       >
@@ -252,41 +268,41 @@ export function SequenceManager({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                            title="Dừng dãy lệnh"
+                            className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/15 cursor-pointer"
+                            title={language === 'en' ? 'Stop sequence' : 'Dừng dãy lệnh'}
                             onClick={handleStopSequence}
                           >
-                            <Square size={15} fill="currentColor" />
+                            <Square size={16} fill="currentColor" />
                           </Button>
                         ) : (
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
-                            title="Chạy"
+                            className="h-8 w-8 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/15 cursor-pointer"
+                            title={language === 'en' ? 'Run sequence' : 'Chạy dãy lệnh'}
                             onClick={() => handleRunSequence(seq)}
                             disabled={!!activeRun}
                           >
-                            <Play size={15} />
+                            <Play size={16} />
                           </Button>
                         )}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-zinc-400 hover:text-zinc-200"
-                          title="Sửa"
+                          className="h-8 w-8 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 cursor-pointer"
+                          title={language === 'en' ? 'Edit' : 'Sửa'}
                           onClick={() => handleEditSequence(seq)}
                         >
-                          <Pencil size={15} />
+                          <Pencil size={16} />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-zinc-400 hover:text-red-400"
-                          title="Xóa"
+                          className="h-8 w-8 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 cursor-pointer"
+                          title={language === 'en' ? 'Delete' : 'Xóa'}
                           onClick={() => handleDeleteSequence(seq.id)}
                         >
-                          <Trash2 size={15} />
+                          <Trash2 size={16} />
                         </Button>
                       </div>
                     </div>
@@ -295,8 +311,8 @@ export function SequenceManager({
               })}
             </div>
           )}
-        </ScrollArea>
-      </div>
+        </div>
+      </ScrollArea>
 
       <SequenceForm
         open={formOpen}

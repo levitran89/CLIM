@@ -5,7 +5,9 @@ import { Play, Pencil, Trash2, Terminal, Square, Star } from 'lucide-react'
 import type { Command } from '../../../shared/types'
 import { useTerminalStore } from '@/stores/terminal-store'
 import { useCommandStore } from '@/stores/command-store'
+import { confirmAction } from '@/stores/confirm-store'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/stores/i18n-store'
 
 interface CommandCardProps {
   command: Command
@@ -28,6 +30,7 @@ export function CommandCard({
 }: CommandCardProps): React.JSX.Element {
   const { sessions, killTerminal } = useTerminalStore()
   const { updateCommand } = useCommandStore()
+  const { t, language } = useTranslation()
 
   const session = sessions.find(
     (s) => s.commandId === command.id && s.status === 'running'
@@ -42,7 +45,14 @@ export function CommandCard({
   const handleStop = async (e: React.MouseEvent): Promise<void> => {
     e.stopPropagation()
     if (session) {
-      if (window.confirm('Bạn có chắc chắn muốn dừng lệnh này không?')) {
+      const confirmed = await confirmAction({
+        title: language === 'en' ? 'Stop command execution' : 'Dừng thực thi lệnh',
+        description: language === 'en' ? `Are you sure you want to stop running command "${command.name}"?` : `Bạn có chắc chắn muốn dừng tiến trình câu lệnh "${command.name}" đang chạy không?`,
+        confirmText: language === 'en' ? 'Stop' : 'Dừng lệnh',
+        cancelText: t('common.cancel'),
+        variant: 'warning'
+      })
+      if (confirmed) {
         await killTerminal(session.id)
       }
     }
@@ -51,17 +61,17 @@ export function CommandCard({
   return (
     <div
       className={cn(
-        'group px-3 py-2.5 rounded-lg transition-all duration-150 border cursor-pointer',
+        'group p-3 rounded-lg transition-all duration-150 border cursor-pointer relative',
         isRunning
-          ? 'bg-emerald-500/20 border-emerald-500/50 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.25)]'
-          : 'border-transparent hover:bg-zinc-800/60 hover:border-zinc-700/30'
+          ? 'bg-gradient-to-r from-emerald-950/30 to-zinc-900/90 border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30'
+          : 'bg-zinc-950/70 border-zinc-800/80 hover:bg-zinc-900/90 hover:border-zinc-700/80 hover:shadow-sm'
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0" onClick={() => onRun(command)}>
           <div className="flex items-center gap-2">
             <Terminal
-              size={13}
+              size={15}
               className={cn(
                 'shrink-0',
                 isRunning ? 'text-emerald-400' : shellColors[command.shell || 'powershell']
@@ -69,42 +79,44 @@ export function CommandCard({
             />
             <span
               className={cn(
-                'text-sm font-medium truncate flex-1',
-                isRunning ? 'text-emerald-100' : 'text-zinc-200'
+                'text-sm sm:text-base font-bold truncate flex-1',
+                isRunning ? 'text-emerald-100' : 'text-zinc-100'
               )}
             >
               {command.name}
             </span>
           </div>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1.5">
             {isRunning && (
               <span
                 className={cn(
-                  'shrink-0 text-[10px] px-1.5 py-0.5 rounded-sm font-medium',
+                  'shrink-0 text-xs px-2 py-0.5 rounded-md font-semibold',
                   session.isBackground
                     ? 'bg-amber-500/25 text-amber-300'
                     : 'bg-emerald-500/30 text-emerald-300'
                 )}
               >
-                {session.isBackground ? 'Chạy ngầm' : 'Đang chạy'}
+                {session.isBackground
+                  ? (language === 'en' ? 'Background' : 'Chạy ngầm')
+                  : (language === 'en' ? 'Running' : 'Đang chạy')}
               </span>
             )}
             <p
               className={cn(
-                'text-xs font-mono truncate flex-1',
-                isRunning ? 'text-emerald-400/70' : 'text-zinc-500'
+                'text-xs sm:text-sm font-mono truncate flex-1',
+                isRunning ? 'text-emerald-300/80 font-medium' : 'text-zinc-400'
               )}
             >
               {command.command}
             </p>
           </div>
           {(command.tags || []).length > 0 && (
-            <div className="flex gap-1 mt-1.5 flex-wrap">
-              {(command.tags || []).slice(0, 3).map((tag) => (
+            <div className="flex gap-1.5 mt-2 flex-wrap">
+              {(command.tags || []).slice(0, 4).map((tag) => (
                 <Badge
                   key={tag}
                   variant="secondary"
-                  className="text-[10px] px-1.5 py-0 h-4"
+                  className="text-xs px-2 py-0.5 h-5 bg-zinc-800 text-zinc-300 border-zinc-700/60 font-medium"
                 >
                   {tag}
                 </Badge>
@@ -115,7 +127,7 @@ export function CommandCard({
 
         <div
           className={cn(
-            'flex items-center gap-0.5 transition-opacity shrink-0',
+            'flex items-center gap-1 transition-opacity shrink-0',
             isRunning || command.isFavorite
               ? 'opacity-100'
               : 'opacity-0 group-hover:opacity-100'
@@ -125,24 +137,24 @@ export function CommandCard({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/15 cursor-pointer"
               onClick={handleStop}
-              title="Dừng lệnh"
+              title={language === 'en' ? 'Stop command' : 'Dừng lệnh'}
             >
-              <Square size={15} fill="currentColor" />
+              <Square size={16} fill="currentColor" />
             </Button>
           ) : (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+              className="h-8 w-8 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/15 cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation()
                 onRun(command)
               }}
-              title="Chạy lệnh"
+              title={language === 'en' ? 'Run command' : 'Chạy lệnh'}
             >
-              <Play size={15} />
+              <Play size={16} />
             </Button>
           )}
 
@@ -150,41 +162,41 @@ export function CommandCard({
             variant="ghost"
             size="icon"
             className={cn(
-              'h-8 w-8',
+              'h-8 w-8 cursor-pointer',
               command.isFavorite
                 ? 'text-amber-400 hover:text-amber-300'
                 : 'text-zinc-400 hover:text-zinc-200'
             )}
             onClick={handleToggleFavorite}
-            title={command.isFavorite ? 'Bỏ ghim' : 'Ghim lệnh'}
+            title={command.isFavorite ? (language === 'en' ? 'Unpin' : 'Bỏ ghim') : (language === 'en' ? 'Pin command' : 'Ghim lệnh')}
           >
-            <Star size={15} fill={command.isFavorite ? 'currentColor' : 'none'} />
+            <Star size={16} fill={command.isFavorite ? 'currentColor' : 'none'} />
           </Button>
 
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-zinc-400 hover:text-zinc-200"
+            className="h-8 w-8 text-zinc-400 hover:text-zinc-200 cursor-pointer"
             onClick={(e) => {
               e.stopPropagation()
               onEdit(command)
             }}
-            title="Sửa"
+            title={t('common.edit')}
           >
-            <Pencil size={15} />
+            <Pencil size={16} />
           </Button>
 
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-zinc-400 hover:text-red-400"
+            className="h-8 w-8 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 cursor-pointer"
             onClick={(e) => {
               e.stopPropagation()
               onDelete(command.id)
             }}
-            title="Xóa"
+            title={t('common.delete')}
           >
-            <Trash2 size={15} />
+            <Trash2 size={16} />
           </Button>
         </div>
       </div>

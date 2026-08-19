@@ -25,16 +25,22 @@ export class PtyManager {
     shell: string = 'powershell',
     cwd: string = process.env.USERPROFILE || 'C:\\',
     cols: number = 80,
-    rows: number = 24
+    rows: number = 24,
+    customEnv?: Record<string, string>
   ): number {
     const shellExe = shellMap[shell] || 'powershell.exe'
+
+    const mergedEnv: Record<string, string> = {
+      ...(process.env as Record<string, string>),
+      ...(customEnv || {})
+    }
 
     const ptyProcess = pty.spawn(shellExe, [], {
       name: 'xterm-color',
       cols,
       rows,
       cwd,
-      env: process.env as Record<string, string>
+      env: mergedEnv
     })
 
     ptyProcess.onData((data: string) => {

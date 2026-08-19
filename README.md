@@ -12,6 +12,10 @@
 - 🔍 **Smart Search & Tags**: Quickly find commands by name, command string, or tags.
 - ⭐ **Favorites**: Pin your most-used commands for quick access.
 - 🚀 **Parallel Terminals**: Launch commands directly in an embedded terminal (PowerShell, CMD, WSL).
+- 🧩 **Interactive Forms (Global Variables)**: Automatically parse variables (`$env:VAR`, `${VAR}`, `{{VAR}}`) in commands and prompt the user to input values via a global modal before execution.
+- ⚙️ **Automated Sequences**: Chain multiple commands to run sequentially or concurrently. Supports two variable prompting modes:
+  - **Option A (Bulk Prompt)**: For automated runs, all variables across all steps are aggregated and prompted at once.
+  - **Option B (Step-by-step Prompt)**: For manual runs (No auto-start), variables are prompted step-by-step as each command is executed.
 - ✂️ **Split View**: Run multiple terminals side-by-side (horizontal/vertical).
 - 🌐 **Port Manager** *(Windows)*: View active listening ports, inspect process details, and safely kill processes. Handles permission errors gracefully with clear guidance for administrator access. Cross-platform support planned for Linux/macOS.
 - 💾 **Import / Export**: Export your command library to JSON or import existing scripts (.bat, .ps1, .txt).

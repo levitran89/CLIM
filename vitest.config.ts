@@ -17,6 +17,7 @@ export default defineConfig({
     setupFiles: './src/setupTests.ts',
     include: ['src/**/tests/**/*.{test,spec}.{ts,tsx}', 'src/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['node_modules', 'dist', 'out'],
+    pool: 'threads'
   },
 })
 

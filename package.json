@@ -1,6 +1,6 @@
 {
   "name": "clim",
-  "version": "1.0.0",
+  "version": "1.6.0",
   "description": "CLI Manager - Manage and execute CLI commands in parallel terminals",
   "main": "./out/main/index.js",
   "author": "LEVI TRAN",

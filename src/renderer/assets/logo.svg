@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#090d16" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <!-- Border Glow Gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="50%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+
+    <!-- Primary Accent Gradient (Emerald to Cyan) -->
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="50%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+
+    <!-- Lightning / Energy Gradient -->
+    <linearGradient id="energyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Base Rounded Container with Neon Border -->
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="12" filter="url(#softGlow)" />
+
+  <!-- Inner Tech Grid Accents -->
+  <rect x="52" y="52" width="408" height="408" rx="84" fill="none" stroke="#1e293b" stroke-width="2" stroke-dasharray="8 8" opacity="0.6" />
+
+  <!-- Window Header Dots (CLI Terminal feel) -->
+  <circle cx="100" cy="96" r="10" fill="#ef4444" opacity="0.9" />
+  <circle cx="132" cy="96" r="10" fill="#f59e0b" opacity="0.9" />
+  <circle cx="164" cy="96" r="10" fill="#10b981" opacity="0.9" />
+
+  <!-- Terminal Prompt Chevron '>' with Cyberpunk Chamfer -->
+  <path d="M 128 176 L 244 256 L 128 336 L 156 376 L 312 256 L 156 136 Z" 
+        fill="url(#accentGrad)" 
+        filter="url(#neonGlow)" />
+
+  <!-- Lightning Bolt / Antigravity Energy Surge In Prompt Center -->
+  <path d="M 230 196 L 200 256 L 246 256 L 210 324 L 284 240 L 238 240 Z" 
+        fill="url(#energyGrad)" 
+        opacity="0.95" />
+
+  <!-- Terminal Cursor Underscore '_' Pulsing Box -->
+  <rect x="290" y="328" width="96" height="28" rx="8" fill="url(#accentGrad)" filter="url(#neonGlow)">
+    <animate attributeName="opacity" values="1;0.2;1" dur="1.4s" repeatCount="indefinite" />
+  </rect>
+
+  <!-- Cyber Subtext / Tech Lines -->
+  <line x1="100" y1="416" x2="412" y2="416" stroke="url(#borderGrad)" stroke-width="3" stroke-linecap="round" opacity="0.7" />
+  <circle cx="412" cy="416" r="5" fill="#38bdf8" filter="url(#softGlow)" />
+</svg>

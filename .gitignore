@@ -48,7 +48,14 @@ coverage/
 # Temp
 tmp/
 temp/
+electron.vite.config.*.mjs
+
+# Keys & Certificates
+*.key
+*.pem
+*.pfx
 
 # GitHub
 .github/
 node_modules
+

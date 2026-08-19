@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import { useTerminal } from '@/hooks/useTerminal'
+import { useRecordingStore } from '@/stores/recording-store'
 import '@xterm/xterm/css/xterm.css'
 
 interface TerminalPanelProps {
@@ -7,13 +8,23 @@ interface TerminalPanelProps {
 }
 
 export function TerminalPanel({ sessionId }: TerminalPanelProps): React.JSX.Element {
-  const { containerRef } = useTerminal({ sessionId })
+  const handleDataReceived = useCallback((data?: string) => {
+    if (data) {
+      useRecordingStore.getState().recordChunk(sessionId, data)
+    }
+  }, [sessionId])
+
+  const { containerRef } = useTerminal({
+    sessionId,
+    onDataReceived: handleDataReceived
+  })
 
   return (
-    <div className="h-full w-full bg-[#0c0c0f] rounded-lg overflow-hidden">
+    <div className="relative h-full w-full bg-[#0c0c0f] rounded-lg overflow-hidden flex flex-col">
+      {/* Terminal Viewport */}
       <div
         ref={containerRef}
-        className="h-full w-full p-2"
+        className="flex-1 w-full p-2 overflow-hidden"
         style={{ minHeight: 0 }}
       />
     </div>

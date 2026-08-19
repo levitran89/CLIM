@@ -1,15 +1,19 @@
 import React from 'react'
 import { useTerminalStore } from '@/stores/terminal-store'
 import { useSequenceStore } from '@/stores/sequence-store'
+import { useSettingsStore } from '@/stores/settings-store'
 import { TerminalPanel } from './TerminalPanel'
 import { TerminalTabs } from './TerminalTabs'
 import { SequenceRunnerPanel } from '@/components/sequences/SequenceRunnerPanel'
 import { Terminal as TerminalIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useTranslation } from '@/stores/i18n-store'
 
 export function TerminalGrid(): React.JSX.Element {
   const { sessions, activeSessionId, splitMode, createTerminal } = useTerminalStore()
   const activeRun = useSequenceStore((s) => s.activeRun)
+  const defaultShell = useSettingsStore((s) => s.settings.defaultShell)
+  const { language } = useTranslation()
 
   const foregroundSessions = sessions.filter((s) => !s.isBackground)
 
@@ -38,25 +42,30 @@ export function TerminalGrid(): React.JSX.Element {
 
         <div className="flex-1 min-h-0 flex flex-col">
           {foregroundSessions.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 text-zinc-500">
-              <div className="p-4 rounded-full bg-zinc-800/50 border border-zinc-700/30">
-                <TerminalIcon size={32} className="text-zinc-600" />
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-zinc-500 p-4">
+              <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800/80 shadow-md">
+                <TerminalIcon size={36} className="text-zinc-500" />
               </div>
-              <div className="text-center">
-                <p className="text-sm font-medium text-zinc-400">Chưa có terminal nào</p>
-                <p className="text-xs text-zinc-600 mt-1">
-                  Tạo một terminal mới hoặc khởi chạy lệnh từ danh sách
+              <div className="text-center space-y-1">
+                <p className="text-base font-semibold text-zinc-300">
+                  {language === 'en' ? 'No terminal session open' : 'Chưa có terminal nào trên màn hình'}
+                </p>
+                <p className="text-xs text-zinc-500">
+                  {language === 'en'
+                    ? `Click below to spawn a new Terminal using default shell in Settings (${defaultShell.toUpperCase()})`
+                    : `Nhấn nút bên dưới để mở Terminal theo cấu hình mặc định trong Cài đặt (${defaultShell.toUpperCase()})`}
                 </p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => createTerminal()}
-                className="mt-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+
+              <button
+                onClick={() => createTerminal({ shell: defaultShell || 'powershell' })}
+                className="mt-3 flex items-center gap-2 h-10 px-6 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 hover:border-zinc-500 text-zinc-200 hover:text-white font-medium text-xs sm:text-sm shadow-sm cursor-pointer transition-colors"
               >
-                <TerminalIcon size={14} className="mr-2" />
-                Terminal mới
-              </Button>
+                <TerminalIcon size={16} className="text-zinc-400" />
+                <span>
+                  {language === 'en' ? `Open Terminal (${defaultShell.toUpperCase()})` : `Mở Terminal (${defaultShell.toUpperCase()})`}
+                </span>
+              </button>
             </div>
           ) : (
             <div className={`flex-1 min-h-0 p-1 ${gridClass}`}>

@@ -6,22 +6,26 @@ interface DialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   children: React.ReactNode
+  className?: string
 }
 
-function Dialog({ open, onOpenChange, children }: DialogProps): React.JSX.Element | null {
+function Dialog({ open, onOpenChange, children, className }: DialogProps): React.JSX.Element | null {
   if (!open) return null
 
   const modal = (
     <div className="fixed inset-0 z-[100]">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+        className="fixed inset-0 bg-black/80 backdrop-blur-md animate-fade-in"
         onClick={() => onOpenChange(false)}
       />
       {/* Content */}
-      <div className="fixed inset-0 flex items-center justify-center p-4">
+      <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6 pointer-events-none">
         <div
-          className="relative z-[101] w-full max-w-lg animate-fade-in"
+          className={cn(
+            'relative z-[101] w-full flex items-center justify-center pointer-events-auto animate-fade-in',
+            className
+          )}
           onClick={(e) => e.stopPropagation()}
         >
           {children}
@@ -38,7 +42,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTML
     <div
       ref={ref}
       className={cn(
-        'rounded-xl border border-border/50 bg-card p-6 shadow-2xl backdrop-blur-xl',
+        'rounded-2xl border border-zinc-700/90 bg-zinc-900/95 p-6 shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_30px_rgba(16,185,129,0.12)] ring-1 ring-zinc-600/50 backdrop-blur-2xl',
         className
       )}
       {...props}

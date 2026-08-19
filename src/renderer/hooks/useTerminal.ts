@@ -2,10 +2,13 @@ import { useEffect, useRef, useCallback } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
+import { useSettingsStore } from '@/stores/settings-store'
+import { registerTerminalInstance, unregisterTerminalInstance } from '@/lib/terminal-buffer-registry'
 
 interface UseTerminalOptions {
   sessionId: string
   onReady?: () => void
+  onDataReceived?: (data: string) => void
 }
 
 interface UseTerminalReturn {
@@ -13,7 +16,7 @@ interface UseTerminalReturn {
   terminalRef: React.RefObject<Terminal | null>
 }
 
-export function useTerminal({ sessionId, onReady }: UseTerminalOptions): UseTerminalReturn {
+export function useTerminal({ sessionId, onReady, onDataReceived }: UseTerminalOptions): UseTerminalReturn {
   const containerRef = useRef<HTMLDivElement>(null!)
   const terminalRef = useRef<Terminal | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
@@ -31,16 +34,22 @@ export function useTerminal({ sessionId, onReady }: UseTerminalOptions): UseTerm
     }
   }, [sessionId])
 
+  const onDataReceivedRef = useRef(onDataReceived)
+  onDataReceivedRef.current = onDataReceived
+
   useEffect(() => {
     if (!containerRef.current) return
 
+    const initialSettings = useSettingsStore.getState().settings
+
     const terminal = new Terminal({
-      cursorBlink: true,
-      cursorStyle: 'bar',
-      fontSize: 14,
+      cursorBlink: initialSettings.cursorBlink ?? true,
+      cursorStyle: (initialSettings.cursorStyle as 'block' | 'underline' | 'bar') || 'bar',
+      fontSize: initialSettings.fontSize || 14,
       fontFamily: "'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace",
       lineHeight: 1.4,
       letterSpacing: 0.5,
+      scrollback: 5000,
       theme: {
         background: '#0c0c0f',
         foreground: '#e4e4e7',
@@ -85,6 +94,17 @@ export function useTerminal({ sessionId, onReady }: UseTerminalOptions): UseTerm
 
     terminalRef.current = terminal
     fitAddonRef.current = fitAddon
+    registerTerminalInstance(sessionId, terminal)
+
+    // Dynamic settings update listener (cursor style, font size, blink)
+    const unsubscribeSettings = useSettingsStore.subscribe((state) => {
+      if (terminalRef.current) {
+        terminalRef.current.options.cursorStyle = (state.settings.cursorStyle as 'block' | 'underline' | 'bar') || 'bar'
+        terminalRef.current.options.cursorBlink = state.settings.cursorBlink ?? true
+        terminalRef.current.options.fontSize = state.settings.fontSize || 14
+        fitAddonRef.current?.fit()
+      }
+    })
 
     // Handle terminal input → send to PTY
     const inputDisposable = terminal.onData((data: string) => {
@@ -96,6 +116,7 @@ export function useTerminal({ sessionId, onReady }: UseTerminalOptions): UseTerm
       (sid: string, data: string) => {
         if (sid === sessionId) {
           terminal.write(data)
+          onDataReceivedRef.current?.(data)
         }
       }
     )
@@ -109,6 +130,8 @@ export function useTerminal({ sessionId, onReady }: UseTerminalOptions): UseTerm
     onReady?.()
 
     cleanupRef.current = () => {
+      unregisterTerminalInstance(sessionId)
+      unsubscribeSettings()
       inputDisposable.dispose()
       removeDataListener()
       resizeObserver.disconnect()

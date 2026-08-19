@@ -23,7 +23,7 @@ interface SequenceState {
   /** Bắt đầu chạy dãy lệnh theo runMode đã lưu */
   startSequence: (sequence: CommandSequence) => Promise<void>
   /** Chạy một bước cụ thể (mode none/first dùng chung 1 terminal) */
-  runStep: (stepId: string) => Promise<void>
+  runStep: (stepId: string, overrideCommand?: string) => Promise<void>
   /** Dừng/pause một bước đang chạy */
   pauseStep: (stepId: string) => Promise<void>
   /** Focus terminal tương ứng bước (đặc biệt mode all) */
@@ -177,7 +177,7 @@ export const useSequenceStore = create<SequenceState>((set, get) => ({
     }
   },
 
-  runStep: async (stepId) => {
+  runStep: async (stepId, overrideCommand) => {
     const { activeRun, sequences } = get()
     if (!activeRun) return
 
@@ -202,7 +202,8 @@ export const useSequenceStore = create<SequenceState>((set, get) => ({
         })
       }
       setActiveSession(sessionId)
-      await sendCommand(sessionId, step.command)
+      const cmdToRun = overrideCommand || step.command
+      await sendCommand(sessionId, cmdToRun)
 
       set({
         activeRun: {
@@ -241,7 +242,8 @@ export const useSequenceStore = create<SequenceState>((set, get) => ({
       ])
     ]
 
-    await sendCommand(sessionId, step.command)
+    const cmdToRun2 = overrideCommand || step.command
+    await sendCommand(sessionId, cmdToRun2)
 
     set({
       activeRun: {

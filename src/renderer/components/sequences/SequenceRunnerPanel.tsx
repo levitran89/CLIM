@@ -6,6 +6,8 @@ import { toast } from 'sonner'
 import { useSequenceStore } from '@/stores/sequence-store'
 import { cn } from '@/lib/utils'
 
+import { useCommandRunner } from '@/components/providers/CommandRunnerProvider'
+
 export function SequenceRunnerPanel(): React.JSX.Element | null {
   const activeRun = useSequenceStore((s) => s.activeRun)
   const sequences = useSequenceStore((s) => s.sequences)
@@ -13,6 +15,7 @@ export function SequenceRunnerPanel(): React.JSX.Element | null {
   const pauseStep = useSequenceStore((s) => s.pauseStep)
   const focusStep = useSequenceStore((s) => s.focusStep)
   const stopSequence = useSequenceStore((s) => s.stopSequence)
+  const { runSequenceStep } = useCommandRunner()
 
   if (!activeRun) return null
 
@@ -21,7 +24,7 @@ export function SequenceRunnerPanel(): React.JSX.Element | null {
 
   const handleRunStep = async (stepId: string): Promise<void> => {
     try {
-      await runStep(stepId)
+      await runSequenceStep(stepId, sequence)
     } catch {
       toast.error('Không thể chạy bước này')
     }
@@ -36,9 +39,20 @@ export function SequenceRunnerPanel(): React.JSX.Element | null {
     }
   }
 
+  const handleRunNext = async (): Promise<void> => {
+    const nextStep = sequence.steps.find(
+      (s) => !activeRun.completedStepIds.includes(s.id) && !activeRun.runningStepIds.includes(s.id)
+    )
+    if (nextStep) {
+      await handleRunStep(nextStep.id)
+    } else {
+      toast.info('Tất cả các bước trong quy trình đã hoàn thành!')
+    }
+  }
+
   const handleStop = async (): Promise<void> => {
     await stopSequence()
-    toast.warning(`Đã kết thúc dãy lệnh "${sequence.name}"`)
+    toast.warning(`Đã kết thúc quy trình "${sequence.name}"`)
   }
 
   return (
@@ -142,15 +156,24 @@ export function SequenceRunnerPanel(): React.JSX.Element | null {
         </div>
       </ScrollArea>
 
-      <div className="p-1.5 border-t border-zinc-800/50">
+      <div className="p-1.5 border-t border-zinc-800/50 space-y-1.5">
+        <Button
+          size="sm"
+          className="w-full h-7 text-[11px] bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold gap-1 cursor-pointer"
+          onClick={handleRunNext}
+        >
+          <Play size={11} />
+          Chạy lệnh tiếp theo
+        </Button>
+
         <Button
           variant="outline"
           size="sm"
-          className="w-full h-7 text-[11px] border-red-500/30 text-red-400 hover:bg-red-500/10"
+          className="w-full h-7 text-[11px] border-red-500/30 text-red-400 hover:bg-red-500/10 cursor-pointer"
           onClick={handleStop}
         >
           <Square size={10} className="mr-1" />
-          Kết thúc dãy
+          Kết thúc quy trình
         </Button>
       </div>
     </div>

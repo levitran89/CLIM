@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import type { TerminalSession, CreateTerminalOptions } from '../../shared/types'
+import { useProfileStore } from './profile-store'
+import { logSystemEvent } from '@/lib/system-logger'
 
 interface TerminalStore {
   sessions: TerminalSession[]
@@ -59,10 +61,14 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
     const cwd = options.cwd || ''
     const title = options.title || `Terminal ${get().sessions.length + 1}`
 
+    const activeProfile = useProfileStore.getState().getActiveProfile()
+    const env = options.env !== undefined ? options.env : activeProfile?.variables
+
     const result = await window.api.terminal.create({
       shell,
       cwd: cwd || undefined,
-      title
+      title,
+      env
     })
 
     const session: TerminalSession = {
@@ -79,11 +85,27 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
     }
 
     get().addSession(session)
+    logSystemEvent(
+      'info',
+      'terminal',
+      title,
+      `Khởi tạo phiên terminal ${shell.toUpperCase()} (PID: ${result.pid})`,
+      `Thư mục làm việc: ${cwd || 'C:\\'}`
+    )
     return result.sessionId
   },
 
   killTerminal: async (id) => {
+    const session = get().sessions.find((s) => s.id === id)
     await window.api.terminal.kill(id)
     get().removeSession(id)
+    if (session) {
+      logSystemEvent(
+        'warning',
+        'terminal',
+        session.title,
+        `Đã đóng phiên terminal "${session.title}" (PID: ${session.pid || 'N/A'})`
+      )
+    }
   }
 }))
