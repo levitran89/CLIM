@@ -3,7 +3,7 @@
   "version": "1.6.0",
   "description": "CLI Manager - Manage and execute CLI commands in parallel terminals",
   "main": "./out/main/index.js",
-  "author": "LEVI TRAN",
+  "author": "TMT Team",
   "license": "MIT",
   "scripts": {
     "dev": "electron-vite dev",
@@ -21,7 +21,9 @@
   "dependencies": {
     "@electron-toolkit/utils": "^4.0.0",
     "@radix-ui/react-slot": "^1.3.0",
+    "@xterm/addon-canvas": "^0.7.0",
     "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-search": "^0.15.0",
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
     "class-variance-authority": "^0.7.1",

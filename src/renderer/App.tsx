@@ -36,6 +36,7 @@ export default function App(): React.JSX.Element {
 
   // Listen for terminal exit events
   useEffect(() => {
+    if (!window.api?.terminal?.onExit) return
     const removeListener = window.api.terminal.onExit(
       (sessionId: string, exitCode: number) => {
         const store = useTerminalStore.getState()

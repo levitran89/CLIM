@@ -84,7 +84,13 @@ export function StatusBar(): React.JSX.Element {
             <span className="flex items-center gap-1">
               Shell:
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-zinc-800 text-zinc-300 font-mono">
-                {activeSession.shell.toUpperCase()}
+                {activeSession.title?.startsWith('SSH:')
+                  ? 'SSH (LINUX)'
+                  : activeSession.shell === 'ubuntu'
+                    ? 'UBUNTU (WSL)'
+                    : activeSession.shell === 'gitbash'
+                      ? 'GIT BASH'
+                      : activeSession.shell.toUpperCase()}
               </Badge>
             </span>
             {activeSession.pid && (

@@ -25,7 +25,7 @@ import {
 } from 'lucide-react'
 import { getDirFromPath } from '@/lib/path-utils'
 import { toast } from 'sonner'
-import type { Command } from '../../../shared/types'
+import type { Command, ShellType } from '@shared/types'
 import { useTranslation } from '@/stores/i18n-store'
 
 interface CommandFormProps {
@@ -49,7 +49,7 @@ export function CommandForm({
   const [workingDirectory, setWorkingDirectory] = useState(
     initialData?.workingDirectory || ''
   )
-  const [shell, setShell] = useState<'powershell' | 'cmd' | 'wsl'>(
+  const [shell, setShell] = useState<ShellType>(
     initialData?.shell || 'powershell'
   )
   const [tagInput, setTagInput] = useState('')
@@ -433,13 +433,16 @@ export function CommandForm({
               <select
                 value={shell}
                 onChange={(e) =>
-                  setShell(e.target.value as 'powershell' | 'cmd' | 'wsl')
+                  setShell(e.target.value as ShellType)
                 }
                 className="flex h-9 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1 text-sm text-zinc-200 shadow-sm focus-visible:outline-none focus-visible:border-emerald-500 cursor-pointer"
               >
-                <option value="powershell">PowerShell (powershell.exe)</option>
-                <option value="cmd">Command Prompt (cmd.exe)</option>
+                <option value="ubuntu">Ubuntu Linux (WSL -d Ubuntu)</option>
                 <option value="wsl">WSL Linux (wsl.exe)</option>
+                <option value="gitbash">Git Bash (bash.exe)</option>
+                <option value="powershell">PowerShell (powershell.exe)</option>
+                <option value="pwsh">PowerShell 7 (pwsh.exe)</option>
+                <option value="cmd">Command Prompt (cmd.exe)</option>
               </select>
             </div>
           </div>

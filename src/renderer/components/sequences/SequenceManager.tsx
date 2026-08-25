@@ -267,23 +267,26 @@ export function SequenceManager({
                         {isRunning ? (
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/15 cursor-pointer"
+                            size="sm"
+                            className="h-7 px-2.5 text-xs bg-rose-500/15 hover:bg-rose-600 text-rose-400 hover:text-white font-semibold border border-rose-500/40 hover:border-rose-400 shadow-sm hover:shadow-[0_0_12px_rgba(244,63,94,0.35)] transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 group/stop"
                             title={language === 'en' ? 'Stop sequence' : 'Dừng dãy lệnh'}
                             onClick={handleStopSequence}
                           >
-                            <Square size={16} fill="currentColor" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse shrink-0" />
+                            <Square size={10} className="fill-current" />
+                            <span>{language === 'en' ? 'Stop' : 'Dừng'}</span>
                           </Button>
                         ) : (
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/15 cursor-pointer"
+                            size="sm"
+                            className="h-7 px-2.5 text-xs bg-emerald-500/15 hover:bg-emerald-500 text-emerald-300 hover:text-zinc-950 font-semibold border border-emerald-500/35 hover:border-emerald-400 shadow-sm hover:shadow-[0_0_12px_rgba(16,185,129,0.35)] transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 group/run"
                             title={language === 'en' ? 'Run sequence' : 'Chạy dãy lệnh'}
                             onClick={() => handleRunSequence(seq)}
                             disabled={!!activeRun}
                           >
-                            <Play size={16} />
+                            <Play size={11} className="fill-current group-hover/run:scale-110 transition-transform" />
+                            <span>{language === 'en' ? 'Run' : 'Chạy'}</span>
                           </Button>
                         )}
                         <Button

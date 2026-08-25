@@ -217,10 +217,43 @@ export function TerminalTabs(): React.JSX.Element {
             </Button>
 
             {showAddMenu && (
-              <div className="absolute top-full right-0 mt-1.5 w-52 p-1.5 bg-zinc-900/95 border border-zinc-700/90 rounded-2xl shadow-[0_0_35px_rgba(0,0,0,0.9)] z-50 animate-fade-in backdrop-blur-xl space-y-1">
+              <div className="absolute top-full right-0 mt-1.5 w-56 p-1.5 bg-zinc-900/95 border border-zinc-700/90 rounded-2xl shadow-[0_0_35px_rgba(0,0,0,0.9)] z-50 animate-fade-in backdrop-blur-xl space-y-1">
                 <div className="px-2.5 py-1 border-b border-zinc-800 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
                   {language === 'en' ? 'Select Terminal Type' : 'Chọn loại Terminal'}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    createTerminal({ shell: 'ubuntu', title: 'Ubuntu Linux' })
+                    setShowAddMenu(false)
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium text-zinc-200 hover:bg-orange-500/15 hover:text-orange-300 transition-colors text-left cursor-pointer group"
+                >
+                  <TerminalIcon size={14} className="text-orange-400 group-hover:scale-110 transition-transform" />
+                  <span>Ubuntu Linux (WSL)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    createTerminal({ shell: 'wsl', title: 'WSL Linux' })
+                    setShowAddMenu(false)
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium text-zinc-200 hover:bg-emerald-500/15 hover:text-emerald-300 transition-colors text-left cursor-pointer group"
+                >
+                  <TerminalIcon size={14} className="text-emerald-400 group-hover:scale-110 transition-transform" />
+                  <span>WSL Linux (Default)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    createTerminal({ shell: 'gitbash', title: 'Git Bash' })
+                    setShowAddMenu(false)
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium text-zinc-200 hover:bg-red-500/15 hover:text-red-300 transition-colors text-left cursor-pointer group"
+                >
+                  <TerminalIcon size={14} className="text-red-400 group-hover:scale-110 transition-transform" />
+                  <span>Git Bash</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -235,6 +268,17 @@ export function TerminalTabs(): React.JSX.Element {
                 <button
                   type="button"
                   onClick={() => {
+                    createTerminal({ shell: 'pwsh', title: 'PowerShell 7' })
+                    setShowAddMenu(false)
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium text-zinc-200 hover:bg-cyan-500/15 hover:text-cyan-300 transition-colors text-left cursor-pointer group"
+                >
+                  <TerminalIcon size={14} className="text-cyan-400 group-hover:scale-110 transition-transform" />
+                  <span>PowerShell 7 (Core)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
                     createTerminal({ shell: 'cmd', title: 'CMD' })
                     setShowAddMenu(false)
                   }}
@@ -242,17 +286,6 @@ export function TerminalTabs(): React.JSX.Element {
                 >
                   <TerminalIcon size={14} className="text-amber-400 group-hover:scale-110 transition-transform" />
                   <span>Command Prompt (CMD)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    createTerminal({ shell: 'wsl', title: 'WSL' })
-                    setShowAddMenu(false)
-                  }}
-                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium text-zinc-200 hover:bg-orange-500/15 hover:text-orange-300 transition-colors text-left cursor-pointer group"
-                >
-                  <TerminalIcon size={14} className="text-orange-400 group-hover:scale-110 transition-transform" />
-                  <span>WSL Linux</span>
                 </button>
               </div>
             )}

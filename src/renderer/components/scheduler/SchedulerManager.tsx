@@ -13,11 +13,11 @@ import {
   Clock,
   Plus,
   Play,
+  Pause,
   Edit2,
   Trash2,
   CheckCircle2,
   XCircle,
-  Loader2,
   Search,
   Timer,
   Calendar,
@@ -440,17 +440,24 @@ export function SchedulerManager(): React.JSX.Element {
                             </Button>
                           )}
 
-                          {/* Run Now Button */}
+                          {/* Run Now / Running Button */}
                           <Button
                             variant="ghost"
                             size="sm"
                             disabled={isRunning}
                             onClick={() => runTaskNow(task.id)}
-                            className="h-8 px-2.5 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1.5 cursor-pointer"
-                            title={language === 'en' ? 'Run immediately now' : 'Chạy thử nghiệm ngay lập tức'}
+                            className={`h-8 px-2.5 text-xs gap-1.5 cursor-pointer ${
+                              isRunning
+                                ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 hover:text-amber-300'
+                                : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10'
+                            }`}
+                            title={isRunning
+                              ? (language === 'en' ? 'Task is running...' : 'Tác vụ đang chạy...')
+                              : (language === 'en' ? 'Run immediately now' : 'Chạy thử nghiệm ngay lập tức')
+                            }
                           >
                             {isRunning ? (
-                              <Loader2 size={13} className="animate-spin" />
+                              <Pause size={13} className="animate-pulse" />
                             ) : (
                               <Play size={13} />
                             )}

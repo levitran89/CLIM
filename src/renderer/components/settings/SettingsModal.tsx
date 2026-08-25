@@ -44,6 +44,7 @@ import {
   Loader2,
   Keyboard,
   Globe,
+  Award,
   type LucideIcon
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -52,6 +53,7 @@ import { useCloudSyncStore } from '@/stores/cloud-sync-store'
 import { useAIStore, PROVIDER_DEFAULT_MODELS, type AIProvider } from '@/stores/ai-store'
 import { testAIConnection } from '@/services/ai-service'
 import { KeybindingsSettingsTab } from './KeybindingsSettingsTab'
+import { LicenseSettingsTab } from './LicenseSettingsTab'
 import { useTranslation, type Language } from '@/stores/i18n-store'
 
 export type SettingsSection =
@@ -64,6 +66,7 @@ export type SettingsSection =
   | 'webhooks'
   | 'cloudSync'
   | 'ai'
+  | 'license'
 
 interface SettingsModalProps {
   open: boolean
@@ -227,27 +230,46 @@ export function SettingsModal({
     { id: 'backup', label: t('settings.backupTab'), icon: HardDrive },
     { id: 'webhooks', label: t('settings.webhooksTab'), icon: Bell },
     { id: 'cloudSync', label: t('settings.cloudSyncTab'), icon: Cloud },
-    { id: 'ai', label: t('settings.aiTab'), icon: Sparkles }
+    { id: 'ai', label: t('settings.aiTab'), icon: Sparkles },
+    { id: 'license', label: language === 'en' ? 'License & Pro Plan' : 'Bản Quyền & Gói Pro', icon: Award }
   ]
 
   const shells: { id: ShellType; name: string; desc: string; iconColor: string }[] = [
     {
+      id: 'ubuntu',
+      name: 'Ubuntu Linux (WSL)',
+      desc: language === 'en' ? 'Ubuntu Linux distribution under WSL (wsl -d Ubuntu)' : 'Môi trường Ubuntu Linux qua WSL (wsl.exe -d Ubuntu)',
+      iconColor: 'text-orange-400'
+    },
+    {
+      id: 'wsl',
+      name: 'WSL Linux (Default)',
+      desc: language === 'en' ? 'Default Windows Subsystem for Linux (wsl.exe)' : 'Môi trường Linux Subsystem mặc định (wsl.exe)',
+      iconColor: 'text-emerald-400'
+    },
+    {
+      id: 'gitbash',
+      name: 'Git Bash',
+      desc: language === 'en' ? 'Git for Windows MINGW64 Bash environment (bash.exe)' : 'Môi trường Git Bash Linux trên Windows (bash.exe)',
+      iconColor: 'text-red-400'
+    },
+    {
       id: 'powershell',
       name: 'PowerShell',
-      desc: language === 'en' ? 'Powerful default Windows shell (powershell.exe)' : 'Shell mặc định mạnh mẽ trên Windows (powershell.exe)',
+      desc: language === 'en' ? 'Standard Windows PowerShell (powershell.exe)' : 'Shell mặc định mạnh mẽ trên Windows (powershell.exe)',
       iconColor: 'text-blue-400'
+    },
+    {
+      id: 'pwsh',
+      name: 'PowerShell 7 (Core)',
+      desc: language === 'en' ? 'Modern cross-platform PowerShell 7 (pwsh.exe)' : 'PowerShell 7 hiện đại đa nền tảng (pwsh.exe)',
+      iconColor: 'text-cyan-400'
     },
     {
       id: 'cmd',
       name: 'Command Prompt (CMD)',
       desc: language === 'en' ? 'Classic Windows command interpreter (cmd.exe)' : 'Trình thông dịch lệnh chuẩn cổ điển (cmd.exe)',
       iconColor: 'text-amber-400'
-    },
-    {
-      id: 'wsl',
-      name: 'WSL Linux',
-      desc: language === 'en' ? 'Windows Subsystem for Linux (wsl.exe)' : 'Môi trường Linux Subsystem (wsl.exe)',
-      iconColor: 'text-orange-400'
     }
   ]
 
@@ -1291,6 +1313,9 @@ export function SettingsModal({
                 </div>
               </div>
             )}
+
+            {/* 9. LICENSE & PRO PLAN */}
+            {activeSection === 'license' && <LicenseSettingsTab />}
             </div>
           </ScrollArea>
         </div>
