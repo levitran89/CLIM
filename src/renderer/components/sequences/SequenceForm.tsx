@@ -15,12 +15,13 @@ import {
   ListOrdered,
   Layers,
   Settings2,
-  PlayCircle
+  PlayCircle,
+  Clock
 } from 'lucide-react'
 import { toast } from 'sonner'
-import type { CommandSequence, SequenceStep, SequenceRunMode } from '@shared/types'
 import { v4 as uuidv4 } from 'uuid'
 import { useTranslation } from '@/stores/i18n-store'
+import type { CommandSequence, SequenceStep, SequenceRunMode, ShellType } from '@shared/types'
 
 export interface SequenceFormData {
   name: string
@@ -28,7 +29,7 @@ export interface SequenceFormData {
   category: string
   steps: SequenceStep[]
   workingDirectory?: string
-  shell?: 'powershell' | 'cmd' | 'wsl'
+  shell?: ShellType
   tags: string[]
   runMode: SequenceRunMode
 }
@@ -54,7 +55,7 @@ export function SequenceForm({
   const [category, setCategory] = useState(initialData?.category || 'General')
   const [steps, setSteps] = useState<SequenceStep[]>([])
   const [workingDirectory, setWorkingDirectory] = useState(initialData?.workingDirectory || '')
-  const [shell, setShell] = useState<'powershell' | 'cmd' | 'wsl'>(initialData?.shell || 'powershell')
+  const [shell, setShell] = useState<ShellType>(initialData?.shell || 'powershell')
   const [tagInput, setTagInput] = useState('')
   const [tags, setTags] = useState<string[]>(initialData?.tags || [])
   const [runMode, setRunMode] = useState<SequenceRunMode>(initialData?.runMode || 'first')
@@ -223,6 +224,27 @@ export function SequenceForm({
                           placeholder={language === 'en' ? 'Step title (e.g. Sync git, Build frontend...)' : 'Tên bước (Ví dụ: Đồng bộ git, Build frontend...)'}
                           className="flex-1 h-7 text-xs bg-zinc-950 border-zinc-800 text-zinc-200"
                         />
+                        {/* Ô nhập số giây chờ tự động */}
+                        <div
+                          className="flex items-center gap-1 shrink-0 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded-md px-1.5 h-7 transition-colors"
+                          title={language === 'en' ? 'Auto-run delay in seconds before next step (0 = immediate/manual)' : 'Số giây chờ tự động trước khi chạy bước tiếp theo (0 = chạy thủ công/ngay lập tức)'}
+                        >
+                          <Clock size={11} className="text-zinc-500" />
+                          <input
+                            type="number"
+                            min={0}
+                            max={3600}
+                            value={step.delaySeconds !== undefined ? step.delaySeconds : ''}
+                            onChange={(e) =>
+                              updateStep(step.id, {
+                                delaySeconds: e.target.value === '' ? undefined : Math.max(0, parseInt(e.target.value) || 0)
+                              })
+                            }
+                            placeholder="0"
+                            className="w-7 bg-transparent text-xs text-amber-400 font-mono text-center focus:outline-none"
+                          />
+                          <span className="text-[10px] text-zinc-500 font-mono">s</span>
+                        </div>
                       </div>
                       <Input
                         value={step.command}
@@ -361,13 +383,16 @@ export function SequenceForm({
                     <select
                       value={shell}
                       onChange={(e) =>
-                        setShell(e.target.value as 'powershell' | 'cmd' | 'wsl')
+                        setShell(e.target.value as ShellType)
                       }
                       className="flex h-8 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500 cursor-pointer"
                     >
+                      <option value="ubuntu">Ubuntu Linux (WSL)</option>
+                      <option value="wsl">WSL Linux (Default)</option>
+                      <option value="gitbash">Git Bash</option>
                       <option value="powershell">PowerShell</option>
-                      <option value="cmd">CMD</option>
-                      <option value="wsl">WSL Linux</option>
+                      <option value="pwsh">PowerShell 7</option>
+                      <option value="cmd">Command Prompt (CMD)</option>
                     </select>
                   </div>
                 </div>

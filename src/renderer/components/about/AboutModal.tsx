@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import logoSvg from '@/assets/logo.svg'
 import { useTranslation } from '@/stores/i18n-store'
+import { useLicenseStore } from '@/stores/license-store'
 
 interface AboutModalProps {
   open: boolean
@@ -29,6 +30,7 @@ interface AboutModalProps {
 
 export function AboutModal({ open, onOpenChange }: AboutModalProps): React.JSX.Element {
   const { t } = useTranslation()
+  const { isPro, payload } = useLicenseStore()
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -56,12 +58,16 @@ export function AboutModal({ open, onOpenChange }: AboutModalProps): React.JSX.E
           </DialogTitle>
           
           <div className="flex items-center gap-2 mt-1.5">
-            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[11px] font-mono font-bold px-2 py-0.5">
-              v1.6.0
-            </Badge>
-            <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-[11px] font-mono">
-              Desktop Edition
-            </Badge>
+            {isPro ? (
+              <Badge variant="secondary" className="bg-amber-500/20 text-amber-300 border-amber-500/40 text-[11px] font-mono font-bold px-2.5 py-0.5 flex items-center gap-1">
+                <Sparkles size={11} className="text-amber-400" />
+                <span>PRO {payload?.plan === 'lifetime' ? 'LIFETIME' : 'ANNUAL'}</span>
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[11px] font-mono font-medium px-2.5 py-0.5">
+                Desktop Edition
+              </Badge>
+            )}
           </div>
 
           <p className="text-xs text-zinc-400 mt-2 max-w-xs leading-relaxed">
@@ -113,19 +119,19 @@ export function AboutModal({ open, onOpenChange }: AboutModalProps): React.JSX.E
             </div>
           </div>
 
-          {/* Credits & Tech Stack */}
-          <div className="p-3 bg-zinc-900/40 rounded-xl border border-zinc-800 space-y-1.5 text-[11px] text-zinc-400">
+          {/* Credits & License */}
+          <div className="p-3 bg-zinc-900/40 rounded-xl border border-zinc-800 space-y-2 text-[11px] text-zinc-400">
             <div className="flex justify-between items-center">
               <span>{t('about.developer') || 'Tác giả & Phát triển:'}</span>
-              <span className="font-semibold text-zinc-200">LEVI TRAN</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>{t('about.techStack') || 'Công nghệ:'}</span>
-              <span className="font-mono text-emerald-400">Electron • React • Vite • Tailwind</span>
+              <span className="font-bold text-zinc-100">TMT Team</span>
             </div>
             <div className="flex justify-between items-center">
               <span>{t('about.license') || 'Giấy phép:'}</span>
               <span className="font-medium text-zinc-300">MIT Open Source</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>Phiên bản:</span>
+              <span className="font-mono text-emerald-400 font-semibold">v1.6.0</span>
             </div>
           </div>
 

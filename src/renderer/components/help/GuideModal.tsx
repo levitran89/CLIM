@@ -558,6 +558,106 @@ export function GuideModal({
                         : 'Khi tác vụ hoàn thành trong nền, CLIM sẽ bắn thông báo Windows Desktop và gửi thẻ Embed báo cáo kết quả sang kênh Discord hoặc Telegram Bot của bạn.'}
                     </p>
                   </div>
+
+                  {/* HƯỚNG DẪN CHI TIẾT: LỆNH NÊN & KHÔNG NÊN DÙNG CHO CRON */}
+                  <div className="p-4 bg-emerald-950/20 border border-emerald-500/30 rounded-xl space-y-3">
+                    <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                      <span className="text-base">🟢</span>
+                      <span>{language === 'en' ? 'Best Commands for Cron Automation (Recommended):' : 'Loại Lệnh Lập Lịch Cron TỐT NHẤT (Nên Dùng):'}</span>
+                    </div>
+                    <ul className="space-y-2 text-zinc-300 text-xs leading-relaxed pl-1">
+                      <li className="flex items-start gap-2">
+                        <span className="text-emerald-400 font-bold">✓</span>
+                        <div>
+                          <strong className="text-zinc-100">{language === 'en' ? 'Automated Backups & Archival:' : 'Sao lưu & Đóng gói dữ liệu:'}</strong>{' '}
+                          {language === 'en'
+                            ? 'Database dumps (mysqldump, pg_dump, mongodump), file archives (tar -czf, Compress-Archive, 7z).'
+                            : 'Xuất cơ sở dữ liệu (mysqldump, pg_dump, mongodump), nén file sao lưu định kỳ (tar -czf, Compress-Archive, 7z).'}
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-emerald-400 font-bold">✓</span>
+                        <div>
+                          <strong className="text-zinc-100">{language === 'en' ? 'System & Log Cleanups:' : 'Dọn rác & Xoay vòng Log:'}</strong>{' '}
+                          {language === 'en'
+                            ? 'Clearing temp folders (Remove-Item "$env:TEMP\\*" -Recurse -Force), deleting old logs, clearing npm/docker cache.'
+                            : 'Dọn sạch thư mục tạm Windows/Linux (Remove-Item "$env:TEMP\\*" -Force, rm -rf /tmp/*), dọn rác build/cache.'}
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-emerald-400 font-bold">✓</span>
+                        <div>
+                          <strong className="text-zinc-100">{language === 'en' ? 'Service Restarts & Container Health:' : 'Khởi động lại dịch vụ & Docker:'}</strong>{' '}
+                          {language === 'en'
+                            ? 'Docker container maintenance (docker restart <name>, docker compose pull), PM2 process reload (pm2 reload all).'
+                            : 'Bảo trì Docker container (docker restart app, docker system prune -f), tái khởi động ứng dụng (pm2 reload all).'}
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-emerald-400 font-bold">✓</span>
+                        <div>
+                          <strong className="text-zinc-100">{language === 'en' ? 'Health Checks & Network Probes:' : 'Kiểm tra kết nối & API Health Check:'}</strong>{' '}
+                          {language === 'en'
+                            ? 'Probing servers (curl -sSf https://api.site.com/health, Test-Connection -Count 4).'
+                            : 'Gọi kiểm tra API định kỳ (curl -sSf https://your-domain.com/health), kiểm tra kết nối mạng (Test-Connection -Count 4).'}
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-emerald-400 font-bold">✓</span>
+                        <div>
+                          <strong className="text-zinc-100">{language === 'en' ? 'SSH Tunnel & Port Forwarding:' : 'Đường hầm SSH Tunnel ngầm:'}</strong>{' '}
+                          {language === 'en'
+                            ? 'Maintaining persistent port forwarding (ssh -i key.pem -N -L 9119:127.0.0.1:9119 user@host) with auto 4-second health check.'
+                            : 'Mở cổng chuyển tiếp SSH ngầm (ssh -i key.pem -N -L 9119:127.0.0.1:9119 user@ip) - CLIM tự động xác thực kết nối chỉ sau 4s.'}
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="p-4 bg-rose-950/20 border border-rose-500/30 rounded-xl space-y-3">
+                    <div className="flex items-center gap-2 text-rose-400 font-bold text-sm">
+                      <span className="text-base">🔴</span>
+                      <span>{language === 'en' ? 'Commands to AVOID for Cron (Will Fail or Hang):' : 'Loại Lệnh KHÔNG NÊN / KHÔNG THỂ DÙNG Cho Lập Lịch:'}</span>
+                    </div>
+                    <ul className="space-y-2 text-zinc-300 text-xs leading-relaxed pl-1">
+                      <li className="flex items-start gap-2">
+                        <span className="text-rose-400 font-bold">✗</span>
+                        <div>
+                          <strong className="text-zinc-100">{language === 'en' ? 'Interactive Terminal Programs (TUI):' : 'Phần mềm yêu cầu bàn phím tương tác trực tiếp:'}</strong>{' '}
+                          {language === 'en'
+                            ? 'Commands like nano, vim, htop, less, python -i, fzf. These require user keystrokes and will hang in headless mode.'
+                            : 'Các lệnh như nano, vim, htop, less, python -i, fzf. Do chạy ngầm không có bàn phím nên tiến trình sẽ bị treo chờ nhập.'}
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-rose-400 font-bold">✗</span>
+                        <div>
+                          <strong className="text-zinc-100">{language === 'en' ? 'Interactive Confirmation Prompts [y/N]:' : 'Lệnh hỏi xác nhận [y/N] mà không có cờ tự động:'}</strong>{' '}
+                          {language === 'en'
+                            ? 'Commands like apt install without -y, or rm without -f. Always add non-interactive flags (e.g. apt install -y, rm -rf, Remove-Item -Force).'
+                            : 'Ví dụ apt install mà quên cờ -y, hoặc xóa file hỏi Yes/No. Cần luôn thêm cờ tự động (VD: apt install -y, Remove-Item -Force).'}
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-rose-400 font-bold">✗</span>
+                        <div>
+                          <strong className="text-zinc-100">{language === 'en' ? 'SSH Requiring Manual Passwords:' : 'Lệnh SSH yêu cầu gõ mật khẩu bằng tay:'}</strong>{' '}
+                          {language === 'en'
+                            ? 'Headless scheduler cannot type SSH passwords. Use SSH Key authentication (ssh -i path/to/key.pem user@host).'
+                            : 'Chạy ngầm không thể gõ mật khẩu. Bắt buộc dùng SSH Key (-i "duong_dan_key.key") thay vì đăng nhập bằng password.'}
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-rose-400 font-bold">✗</span>
+                        <div>
+                          <strong className="text-zinc-100">{language === 'en' ? 'GUI Desktop Applications:' : 'Phần mềm mở giao diện cửa sổ GUI:'}</strong>{' '}
+                          {language === 'en'
+                            ? 'Opening apps like notepad.exe, chrome.exe, or games that wait indefinitely for user to close window.'
+                            : 'Mở các ứng dụng giao diện như notepad.exe, chrome.exe (chờ người dùng bấm X đóng cửa sổ mới thoát).'}
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             )}

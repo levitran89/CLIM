@@ -28,7 +28,9 @@ interface SequenceState {
   pauseStep: (stepId: string) => Promise<void>
   /** Focus terminal tương ứng bước (đặc biệt mode all) */
   focusStep: (stepId: string) => void
-  /** Kết thúc phiên chạy dãy — dừng toàn bộ process/terminal liên quan */
+  /** Kết thúc quy trình — dừng các bước quy trình nhưng giữ nguyên cửa sổ terminal */
+  finishSequence: () => void
+  /** Đóng quy trình — dừng toàn bộ process và đóng tất cả terminal liên quan */
   stopSequence: () => Promise<void>
 }
 
@@ -320,6 +322,10 @@ export const useSequenceStore = create<SequenceState>((set, get) => ({
           : [...activeRun.completedStepIds, stepId]
       }
     })
+  },
+
+  finishSequence: () => {
+    set({ activeRun: null })
   },
 
   stopSequence: async () => {

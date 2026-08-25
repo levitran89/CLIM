@@ -198,8 +198,23 @@ export class SchedulerManager {
     let outputPreview = ''
     let exitCode = 0
 
-    // Lấy lệnh hoặc quy trình từ tham số hoặc nạp từ store
-    if (task.targetType === 'command') {
+    // 1. Ưu tiên thực thi mã lệnh tùy chỉnh riêng (customCommand) nếu có
+    if (task.customCommand && task.customCommand.trim()) {
+      commandToRun = task.customCommand.trim()
+      targetName = task.name || 'Lệnh tùy chỉnh riêng'
+    } else if (task.targetId === 'custom_direct' || (!task.targetId && task.customCommand !== undefined)) {
+      // 2. Chế độ Tự nhập mã lệnh trực tiếp (Direct Code Mode)
+      commandToRun = task.customCommand?.trim() || ''
+      if (commandToRun) {
+        targetName = task.name || 'Lệnh tùy chỉnh riêng'
+      } else {
+        commandToRun = ''
+        status = 'failed'
+        exitCode = 1
+        outputPreview = 'Tác vụ ở chế độ tự nhập trực tiếp nhưng ô "Mã lệnh thực thi" đang trống. Vui lòng mở lại tác vụ và nhập mã lệnh cần chạy.'
+      }
+    } else if (task.targetType === 'command') {
+      // 3. Lấy từ câu lệnh đơn
       const allCommands: Command[] =
         commandsStore && commandsStore.length > 0
           ? commandsStore
@@ -208,7 +223,7 @@ export class SchedulerManager {
       if (cmd) {
         commandToRun = cmd.command
         targetName = cmd.name
-      } else if (task.targetId && (task.targetId.includes(' ') || task.targetId.startsWith('ping') || task.targetId.startsWith('curl') || task.targetId.startsWith('echo'))) {
+      } else if (task.targetId && (task.targetId.includes(' ') || task.targetId.startsWith('ping') || task.targetId.startsWith('curl') || task.targetId.startsWith('echo') || task.targetId.startsWith('ssh'))) {
         commandToRun = task.targetId
         targetName = task.name || 'Lệnh trực tiếp'
       } else {
@@ -218,6 +233,7 @@ export class SchedulerManager {
         outputPreview = `Không tìm thấy câu lệnh có ID hoặc tên: "${task.targetId}". Vui lòng chỉnh sửa lại tác vụ để chọn câu lệnh hợp lệ.`
       }
     } else {
+      // 4. Lấy từ quy trình (Pipeline)
       const allSequences: CommandSequence[] =
         sequencesStore && sequencesStore.length > 0
           ? sequencesStore
@@ -262,8 +278,35 @@ export class SchedulerManager {
         commandToRun = commandToRun.replace(reg1, v).replace(reg2, v).replace(reg3, v)
       }
 
-      // 2. Tự động chuyển ping vô hạn (-t) thành 4 gói tin (-n 4) khi chạy tự động ngầm
-      let sanitizedCmd = commandToRun
+      // 2. Chuẩn hóa lệnh khi thực thi (xử lý trường hợp lệnh đơn bị xuống dòng vô ý hoặc script nhiều dòng)
+      let sanitizedCmd = commandToRun.trim()
+
+      const rawLines = sanitizedCmd
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean)
+
+      if (rawLines.length > 1) {
+        const firstLine = rawLines[0].toLowerCase()
+        const isSingleCommandType =
+          firstLine.startsWith('ssh') ||
+          firstLine.startsWith('curl') ||
+          firstLine.startsWith('scp') ||
+          firstLine.startsWith('sftp') ||
+          firstLine.startsWith('ping') ||
+          firstLine.startsWith('docker')
+
+        if (isSingleCommandType) {
+          // Lệnh đơn (như SSH, cURL, Docker...) bị ngắt dòng giữa các tham số: Nối lại thành 1 dòng duy nhất liền mạch
+          sanitizedCmd = rawLines.join(' ')
+        } else {
+          // Kịch bản nhiều câu lệnh: Trên Windows PowerShell nối bằng ' ; ', trên Linux/macOS nối bằng ' && '
+          const isWin = process.platform === 'win32'
+          sanitizedCmd = isWin ? rawLines.join(' ; ') : rawLines.join(' && ')
+        }
+      }
+
+      // 3. Tự động chuyển ping vô hạn (-t) thành 4 gói tin (-n 4) khi chạy tự động ngầm
       if (sanitizedCmd.toLowerCase().includes('ping')) {
         const isWin = process.platform === 'win32'
         sanitizedCmd = sanitizedCmd
@@ -271,73 +314,162 @@ export class SchedulerManager {
           .replace(/\bping\s+-t\s+/gi, isWin ? 'ping -n 4 ' : 'ping -c 4 ')
       }
 
-      try {
-        // Quản lý vòng đời 2 giai đoạn: Chờ 30s -> Ghi log quá hạn lần 1 nếu chưa xong -> Gia hạn thêm 30s (Tổng 60s)
-        const warningTimer = setTimeout(() => {
-          const interimLog: TaskExecutionLog = {
-            id: crypto.randomUUID(),
-            taskId: task.id,
-            taskName: task.name,
-            targetType: task.targetType,
-            targetName,
-            startedAt,
-            finishedAt: Date.now(),
-            durationMs: 30000,
-            status: 'failed',
-            outputPreview: '⏳ Lệnh đang chạy vượt quá 30s (Quá hạn lần 1). Hệ thống đang tự động gia hạn thêm 30s để chờ kết quả hoàn tất...',
-            exitCode: 124
-          }
-          this.addLog(interimLog)
-        }, 30000)
+      // 4. Phát hiện đặc biệt: Lệnh SSH Port Forward Tunnel (-N / -f / Background Tunnel)
+      const lowerCmd = sanitizedCmd.toLowerCase()
+      const isSshTunnel =
+        (lowerCmd.startsWith('ssh ') || lowerCmd.startsWith('ssh.exe ')) &&
+        (sanitizedCmd.includes(' -N') || sanitizedCmd.includes(' -f')) &&
+        !lowerCmd.endsWith(' bash') && !lowerCmd.endsWith(' sh')
 
-        const { stdout, stderr } = await new Promise<{ stdout: string; stderr: string }>(
-          (resolve, reject) => {
-            const isWin = process.platform === 'win32'
-            const shellOption = isWin ? 'powershell.exe' : undefined
-            exec(
-              sanitizedCmd,
-              {
-                timeout: 60000,
-                maxBuffer: 1024 * 1024 * 5,
-                shell: shellOption,
-                encoding: 'utf8',
-                env: { ...process.env, ...envVars }
-              },
-              (error, stdout, stderr) => {
-                clearTimeout(warningTimer)
-                if (error) {
-                  exitCode = typeof error.code === 'number' ? error.code : 1
-                  reject({ error, stdout, stderr })
-                } else {
-                  exitCode = 0
-                  resolve({ stdout, stderr })
+      if (isSshTunnel) {
+        // Với lệnh SSH Tunnel (-N), tiến trình được thiết kế để duy trì kết nối ngầm vĩnh viễn (không tự thoát).
+        // Ta kiểm tra trong 4 giây: Nếu trong 4s bị lỗi (key sai, port bận, host không tới được) -> báo failed với lỗi thật.
+        // Nếu sau 4s tiến trình vẫn đang chạy ổn định -> Đã kết nối tunnel thành công và đang duy trì ngầm!
+        try {
+          const isWin = process.platform === 'win32'
+          const shellOption = isWin ? 'powershell.exe' : undefined
+
+          // Trên Windows, cờ -f (fork to background) không được hỗ trợ bởi OpenSSH.
+          // Loại bỏ -f để tiến trình chạy trực tiếp trong child process, được quản lý bởi bộ kiểm tra 4 giây.
+          let tunnelCmd = sanitizedCmd
+          if (isWin) {
+            tunnelCmd = tunnelCmd.replace(/\s+-f\b/g, '').replace(/^ssh\s+-f\b/i, 'ssh')
+          }
+
+          const tunnelResult = await new Promise<{ success: boolean; message: string; exitCode: number }>(
+            (resolve) => {
+              let procStderr = ''
+              let hasExited = false
+
+              exec(
+                tunnelCmd,
+                {
+                  shell: shellOption,
+                  encoding: 'utf8',
+                  env: { ...process.env, ...envVars }
+                },
+                (error, stdout, stderr) => {
+                  hasExited = true
+                  procStderr = stderr || stdout || error?.message || ''
+                  if (error) {
+                    resolve({
+                      success: false,
+                      message: procStderr || `Lỗi kết nối SSH Tunnel: ${error.message}`,
+                      exitCode: typeof error.code === 'number' ? error.code : 1
+                    })
+                  } else {
+                    resolve({
+                      success: true,
+                      message: 'SSH Tunnel hoàn tất.',
+                      exitCode: 0
+                    })
+                  }
                 }
-              }
-            )
+              )
+
+              // Sau 4 giây, nếu child process vẫn đang sống và chưa báo lỗi -> Tunnel kết nối thành công!
+              setTimeout(() => {
+                if (!hasExited) {
+                  const portMatch = sanitizedCmd.match(/-L\s+([^\s]+)/i)
+                  const portInfo = portMatch ? `(Port Forward: ${portMatch[1]})` : ''
+                  resolve({
+                    success: true,
+                    message: `✅ SSH Tunnel ${portInfo} đã kết nối thành công và đang duy trì cổng chuyển tiếp ngầm!`,
+                    exitCode: 0
+                  })
+                }
+              }, 4000)
+            }
+          )
+
+          if (tunnelResult.success) {
+            status = 'success'
+            exitCode = 0
+            outputPreview = tunnelResult.message
+          } else {
+            status = 'failed'
+            exitCode = tunnelResult.exitCode
+            outputPreview = tunnelResult.message
           }
-        )
-
-        status = 'success'
-        outputPreview = (stdout || stderr || 'Thực thi thành công').slice(0, 800)
-      } catch (err: unknown) {
-        const errObj = err as { error?: Error; stdout?: string; stderr?: string }
-        const stdoutStr = errObj.stdout || ''
-        const stderrStr = errObj.stderr || ''
-
-        // Nếu stdout chứa kết quả ping hoặc phản hồi hợp lệ, đánh giá là thành công
-        if (
-          stdoutStr.includes('Reply from') ||
-          (stdoutStr.includes('bytes=') &&
-            !stdoutStr.includes('Destination host unreachable') &&
-            !stdoutStr.includes('Request timed out')) ||
-          (stdoutStr.length > 50 && !stderrStr && !stdoutStr.toLowerCase().includes('error'))
-        ) {
-          status = 'success'
-          exitCode = 0
-          outputPreview = stdoutStr.slice(0, 800)
-        } else {
+        } catch (tunnelErr: any) {
           status = 'failed'
-          outputPreview = (stderrStr || stdoutStr || (errObj.error?.message ?? String(err))).slice(0, 800)
+          exitCode = 1
+          outputPreview = String(tunnelErr?.message || tunnelErr)
+        }
+      } else {
+        // Lệnh thông thường (không phải SSH Tunnel -N)
+        try {
+          // Quản lý vòng đời 2 giai đoạn: Chờ 30s -> Ghi log quá hạn lần 1 nếu chưa xong -> Gia hạn thêm 30s (Tổng 60s)
+          const warningTimer = setTimeout(() => {
+            const interimLog: TaskExecutionLog = {
+              id: crypto.randomUUID(),
+              taskId: task.id,
+              taskName: task.name,
+              targetType: task.targetType,
+              targetName,
+              startedAt,
+              finishedAt: Date.now(),
+              durationMs: 30000,
+              status: 'failed',
+              outputPreview: '⏳ Lệnh đang chạy vượt quá 30s (Quá hạn lần 1). Hệ thống đang tự động gia hạn thêm 30s để chờ kết quả hoàn tất...',
+              exitCode: 124
+            }
+            this.addLog(interimLog)
+          }, 30000)
+
+          const { stdout, stderr } = await new Promise<{ stdout: string; stderr: string }>(
+            (resolve, reject) => {
+              const isWin = process.platform === 'win32'
+              const shellOption = isWin ? 'powershell.exe' : undefined
+              exec(
+                sanitizedCmd,
+                {
+                  timeout: 60000,
+                  maxBuffer: 1024 * 1024 * 5,
+                  shell: shellOption,
+                  encoding: 'utf8',
+                  env: { ...process.env, ...envVars }
+                },
+                (error, stdout, stderr) => {
+                  clearTimeout(warningTimer)
+                  if (error) {
+                    exitCode = typeof error.code === 'number' ? error.code : 1
+                    reject({ error, stdout, stderr })
+                  } else {
+                    exitCode = 0
+                    resolve({ stdout, stderr })
+                  }
+                }
+              )
+            }
+          )
+
+          status = 'success'
+          outputPreview = (stdout || stderr || 'Thực thi thành công').slice(0, 800)
+        } catch (err: unknown) {
+          const errObj = err as { error?: Error; stdout?: string; stderr?: string }
+          const stdoutStr = errObj.stdout || ''
+          const stderrStr = errObj.stderr || ''
+
+          // Nếu stdout chứa kết quả ping hoặc phản hồi hợp lệ, đánh giá là thành công
+          if (
+            stdoutStr.includes('Reply from') ||
+            (stdoutStr.includes('bytes=') &&
+              !stdoutStr.includes('Destination host unreachable') &&
+              !stdoutStr.includes('Request timed out')) ||
+            (stdoutStr.length > 50 && !stderrStr && !stdoutStr.toLowerCase().includes('error'))
+          ) {
+            status = 'success'
+            exitCode = 0
+            outputPreview = stdoutStr.slice(0, 800)
+          } else {
+            status = 'failed'
+            let rawError = stderrStr || stdoutStr || (errObj.error?.message ?? String(err))
+            if (rawError.includes('Pseudo-terminal will not be allocated') || rawError.includes('stdin is not a terminal')) {
+              rawError += '\n💡 [Chẩn đoán CLIM]: Tác vụ lập lịch Cron chạy nền (Headless) không có bàn phím tương tác để gõ mật khẩu hoặc lệnh con. Vui lòng sử dụng SSH Key và truyền lệnh trực tiếp trên 1 dòng SSH: ssh -i <key> <user>@<host> "<command>"'
+            }
+            outputPreview = rawError.slice(0, 1000)
+          }
         }
       }
     }

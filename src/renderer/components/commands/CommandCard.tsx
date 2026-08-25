@@ -67,9 +67,9 @@ export function CommandCard({
           : 'bg-zinc-950/70 border-zinc-800/80 hover:bg-zinc-900/90 hover:border-zinc-700/80 hover:shadow-sm'
       )}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex-1 min-w-0" onClick={() => onRun(command)}>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Terminal
               size={15}
               className={cn(
@@ -79,12 +79,17 @@ export function CommandCard({
             />
             <span
               className={cn(
-                'text-sm sm:text-base font-bold truncate flex-1',
+                'text-sm sm:text-base font-bold truncate',
                 isRunning ? 'text-emerald-100' : 'text-zinc-100'
               )}
             >
               {command.name}
             </span>
+            {command.category && (
+              <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-zinc-900 text-zinc-400 border border-zinc-800 shrink-0">
+                {command.category}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 mt-1.5">
             {isRunning && (
@@ -136,25 +141,28 @@ export function CommandCard({
           {isRunning ? (
             <Button
               variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/15 cursor-pointer"
+              size="sm"
+              className="h-7 px-2.5 text-xs bg-rose-500/15 hover:bg-rose-600 text-rose-400 hover:text-white font-semibold border border-rose-500/40 hover:border-rose-400 shadow-sm rounded-md transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 group/stop"
               onClick={handleStop}
               title={language === 'en' ? 'Stop command' : 'Dừng lệnh'}
             >
-              <Square size={16} fill="currentColor" />
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse shrink-0" />
+              <Square size={10} className="fill-current" />
+              <span>{language === 'en' ? 'Stop' : 'Dừng'}</span>
             </Button>
           ) : (
             <Button
               variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/15 cursor-pointer"
+              size="sm"
+              className="h-7 px-2.5 text-xs bg-emerald-500/15 hover:bg-emerald-500 text-emerald-300 hover:text-zinc-950 font-semibold border border-emerald-500/35 hover:border-emerald-400 shadow-sm rounded-md transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 group/run"
               onClick={(e) => {
                 e.stopPropagation()
                 onRun(command)
               }}
               title={language === 'en' ? 'Run command' : 'Chạy lệnh'}
             >
-              <Play size={16} />
+              <Play size={11} className="fill-current group-hover/run:scale-110 transition-transform" />
+              <span>{language === 'en' ? 'Run' : 'Chạy'}</span>
             </Button>
           )}
 

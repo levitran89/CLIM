@@ -1,4 +1,5 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
+import path from 'path'
 import Store from 'electron-store'
 import { writeFile, readFile } from 'fs/promises'
 import { ptyManager } from './pty-manager'
@@ -189,6 +190,29 @@ export function registerIpcHandlers(): void {
 
     ipcMain.handle('system:killPort', async (_event, pid: number) => {
     return await portManager.killPort(pid)
+  })
+
+  ipcMain.handle('system:openExternal', async (_event, url: string) => {
+    try {
+      if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:') || url.startsWith('file://'))) {
+        await shell.openExternal(url)
+        return true
+      }
+    } catch (err) {
+      console.error('Failed to open external URL:', err)
+    }
+    return false
+  })
+
+  ipcMain.handle('system:openLicenseStudio', async () => {
+    try {
+      const studioPath = path.resolve(process.cwd(), 'tools/tmt-license-studio/index.html')
+      await shell.openPath(studioPath)
+      return true
+    } catch (err) {
+      console.error('Failed to open License Studio:', err)
+      return false
+    }
   })
 
   // ─── Sequence Channels ────────────────────────────────────────

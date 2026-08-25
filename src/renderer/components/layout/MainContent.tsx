@@ -42,7 +42,8 @@ import {
   Cpu,
   Layers,
   Zap,
-  Box
+  Box,
+  ShieldCheck
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Command, CommandSequence } from '@shared/types'
@@ -75,7 +76,54 @@ export function MainContent(): React.JSX.Element {
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const { createTerminal, killTerminal, activeSessionId } = useTerminalStore()
-  const defaultShell = useSettingsStore((s) => s.settings.defaultShell)
+  const { settings, updateSettings } = useSettingsStore()
+  const defaultShell = settings.defaultShell
+  const defaultAutomation = settings.menuDefaultAutomation || 'commands'
+  const defaultTerminal = settings.menuDefaultTerminal || 'terminal'
+  const defaultSystem = settings.menuDefaultSystem || 'monitor'
+
+  // Helper info for Automation group
+  const getAutomationInfo = (tab: 'profiles' | 'commands' | 'sequences' | 'scheduler') => {
+    switch (tab) {
+      case 'profiles':
+        return { icon: SlidersHorizontal, title: t('tabs.profiles'), color: 'text-blue-400' }
+      case 'commands':
+        return { icon: Terminal, title: t('tabs.commands'), color: 'text-emerald-400' }
+      case 'sequences':
+        return { icon: ListOrdered, title: t('tabs.sequences'), color: 'text-violet-400' }
+      case 'scheduler':
+        return { icon: Clock, title: t('tabs.scheduler'), color: 'text-amber-400' }
+    }
+  }
+
+  // Helper info for Terminal group
+  const getTerminalInfo = (tab: 'terminal' | 'ssh' | 'docker') => {
+    switch (tab) {
+      case 'terminal':
+        return { icon: SquareTerminal, title: t('tabs.terminal'), color: 'text-emerald-400' }
+      case 'ssh':
+        return { icon: Server, title: t('tabs.ssh'), color: 'text-purple-400' }
+      case 'docker':
+        return { icon: Box, title: t('tabs.docker'), color: 'text-blue-400' }
+    }
+  }
+
+  // Helper info for System group
+  const getSystemInfo = (tab: 'monitor' | 'hub') => {
+    switch (tab) {
+      case 'monitor':
+        return { icon: Cpu, title: t('dropdowns.monitorTitle'), color: 'text-emerald-400' }
+      case 'hub':
+        return { icon: Store, title: t('dropdowns.snippetHubTitle'), color: 'text-pink-400' }
+    }
+  }
+
+  const autoInfo = getAutomationInfo(defaultAutomation)
+  const AutoIcon = autoInfo.icon
+  const termInfo = getTerminalInfo(defaultTerminal)
+  const TermIcon = termInfo.icon
+  const sysInfo = getSystemInfo(defaultSystem)
+  const SysIcon = sysInfo.icon
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -96,6 +144,7 @@ export function MainContent(): React.JSX.Element {
     onNewTerminal: () => {
       createTerminal({ shell: defaultShell || 'powershell' })
       setActiveTab('terminal')
+      updateSettings({ menuDefaultTerminal: 'terminal' })
       toast.success('Đã mở Terminal mới')
     },
     onCloseActiveTerminal: () => {
@@ -105,6 +154,13 @@ export function MainContent(): React.JSX.Element {
     },
     onNavigateTab: (tab) => {
       setActiveTab(tab)
+      if (['profiles', 'commands', 'sequences', 'scheduler'].includes(tab)) {
+        updateSettings({ menuDefaultAutomation: tab as any })
+      } else if (['terminal', 'ssh', 'docker'].includes(tab)) {
+        updateSettings({ menuDefaultTerminal: tab as any })
+      } else if (['ports', 'monitor'].includes(tab)) {
+        updateSettings({ menuDefaultSystem: 'monitor' })
+      }
       setOpenDropdown(null)
     },
     onOpenSettings: () => setSettingsOpen(true),
@@ -114,6 +170,7 @@ export function MainContent(): React.JSX.Element {
   // Direct terminal execution
   const handleExecuteCommandDirect = async (cmd: Command): Promise<void> => {
     setActiveTab('terminal')
+    updateSettings({ menuDefaultTerminal: 'terminal' })
     const sessionId = await createTerminal({
       shell: cmd.shell || defaultShell || 'powershell',
       cwd: cmd.workingDirectory || ''
@@ -138,6 +195,7 @@ export function MainContent(): React.JSX.Element {
   // Handle running a sequence from CommandPalette
   const handlePaletteRunSequence = (seq: CommandSequence): void => {
     setActiveTab('sequences')
+    updateSettings({ menuDefaultAutomation: 'sequences' })
     toast.info(`Đã chuyển đến Quy trình: "${seq.name}"`)
   }
 
@@ -153,47 +211,69 @@ export function MainContent(): React.JSX.Element {
         className="flex items-center justify-between bg-zinc-900/95 px-3 sm:px-4 py-1.5 border-b border-zinc-800/80 shrink-0 select-none shadow-sm z-30"
       >
         {/* Left: Grouped Dropdown Tabs */}
-        <div className="flex items-center space-x-1 shrink-0">
-          {/* 1. Dashboard Tab (Đầu tiên) */}
+        <div className="flex items-center space-x-1.5 shrink-0">
+          {/* 1. Dashboard Tab (Nổi Bật Cố Định - Không Bị Đổi Trạng Thái Active) */}
           <button
             onClick={() => {
               setActiveTab('dashboard')
               setOpenDropdown(null)
             }}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'dashboard'
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-transparent'
-            }`}
+            className="group relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-500/25 via-emerald-500/20 to-teal-500/20 hover:from-emerald-500/35 hover:to-teal-500/35 text-emerald-300 hover:text-emerald-100 border border-emerald-500/40 hover:border-emerald-400/60 shadow-sm transition-all cursor-pointer whitespace-nowrap"
+            title={t('tabs.dashboard')}
           >
-            <LayoutDashboard size={14} className={activeTab === 'dashboard' ? 'text-emerald-400' : 'text-zinc-400'} />
-            <span>{t('tabs.dashboard')}</span>
+            <LayoutDashboard
+              size={14}
+              className="text-emerald-400 group-hover:scale-110 transition-transform"
+            />
+            <span className="tracking-wide">{t('tabs.dashboard')}</span>
           </button>
 
-          {/* 2. Group 1: ⚙️ Tự Động Hóa (Môi trường, Lệnh, Quy trình, Lập lịch) */}
-          <div className="relative">
-            <button
-              onClick={() => setOpenDropdown(openDropdown === 'automation' ? null : 'automation')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+          {/* 2. Group 1: ⚡ Tự Động Hóa (Split-Button: Lệnh, Quy trình, Môi trường, Lập lịch) */}
+          <div className="relative inline-flex items-center">
+            <div
+              className={`inline-flex items-stretch rounded-xl border transition-all shadow-sm ${
                 isAutomationActive
-                  ? 'bg-zinc-800 text-zinc-100 border border-zinc-700 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-transparent'
+                  ? 'border-emerald-500/40 bg-zinc-800/90 text-zinc-100 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
+                  : 'border-zinc-800/80 bg-zinc-900/50 hover:border-zinc-700/80 text-zinc-400'
               }`}
             >
-              <Zap size={14} className={isAutomationActive ? 'text-emerald-400' : 'text-zinc-400'} />
-              <span>
-                {activeTab === 'profiles'
-                  ? t('tabs.profiles')
-                  : activeTab === 'commands'
-                    ? t('tabs.commands')
-                    : activeTab === 'sequences'
-                      ? t('tabs.sequences')
-                      : activeTab === 'scheduler'
-                        ? t('tabs.scheduler')
-                        : t('tabs.automationGroup')}
-              </span>
-              <ChevronDown size={12} className={`text-zinc-500 transition-transform ${openDropdown === 'automation' ? 'rotate-180 text-emerald-400' : ''}`} />
-            </button>
+              {/* Left Action: Click vào là đến thẳng chức năng mặc định */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab(defaultAutomation)
+                  setOpenDropdown(null)
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-l-xl transition-all cursor-pointer whitespace-nowrap ${
+                  isAutomationActive
+                    ? 'text-emerald-300 hover:text-emerald-200'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+                }`}
+                title={`Mở ${autoInfo.title} (Click vào thẳng chức năng)`}
+              >
+                <AutoIcon size={14} className={isAutomationActive ? autoInfo.color : 'text-zinc-400'} />
+                <span>{autoInfo.title}</span>
+              </button>
+
+              {/* Right Action: Mũi tên để mở danh sách chọn & thay đổi mặc định */}
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'automation' ? null : 'automation')}
+                className={`px-1.5 py-1.5 flex items-center justify-center rounded-r-xl border-l transition-all cursor-pointer ${
+                  isAutomationActive
+                    ? 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
+                    : 'border-zinc-800/80 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60'
+                }`}
+                title="Chọn chức năng Tự động hóa & đặt làm mặc định"
+              >
+                <ChevronDown
+                  size={12}
+                  className={`transition-transform duration-150 ${
+                    openDropdown === 'automation' ? 'rotate-180 text-emerald-400' : ''
+                  }`}
+                />
+              </button>
+            </div>
 
             {openDropdown === 'automation' && (
               <div className="absolute left-0 top-full mt-1.5 w-64 bg-zinc-950/98 border border-zinc-700/80 rounded-2xl p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.5)] z-50 animate-in fade-in-50 slide-in-from-top-1 duration-150 backdrop-blur-xl space-y-0.5">
@@ -201,7 +281,11 @@ export function MainContent(): React.JSX.Element {
                   <span className="text-[9px] uppercase tracking-widest font-bold text-zinc-500">{t('dropdowns.automationTitle')}</span>
                 </div>
                 <button
-                  onClick={() => { setActiveTab('profiles'); setOpenDropdown(null) }}
+                  onClick={() => {
+                    setActiveTab('profiles')
+                    updateSettings({ menuDefaultAutomation: 'profiles' })
+                    setOpenDropdown(null)
+                  }}
                   className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all ${
                     activeTab === 'profiles' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'text-zinc-200 hover:bg-zinc-800/80 hover:text-white border border-transparent'
                   }`}
@@ -214,7 +298,11 @@ export function MainContent(): React.JSX.Element {
                 </button>
 
                 <button
-                  onClick={() => { setActiveTab('commands'); setOpenDropdown(null) }}
+                  onClick={() => {
+                    setActiveTab('commands')
+                    updateSettings({ menuDefaultAutomation: 'commands' })
+                    setOpenDropdown(null)
+                  }}
                   className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all ${
                     activeTab === 'commands' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'text-zinc-200 hover:bg-zinc-800/80 hover:text-white border border-transparent'
                   }`}
@@ -229,7 +317,11 @@ export function MainContent(): React.JSX.Element {
                 <div className="mx-2 my-1 border-t border-zinc-800/60" />
 
                 <button
-                  onClick={() => { setActiveTab('sequences'); setOpenDropdown(null) }}
+                  onClick={() => {
+                    setActiveTab('sequences')
+                    updateSettings({ menuDefaultAutomation: 'sequences' })
+                    setOpenDropdown(null)
+                  }}
                   className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all ${
                     activeTab === 'sequences' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'text-zinc-200 hover:bg-zinc-800/80 hover:text-white border border-transparent'
                   }`}
@@ -242,7 +334,11 @@ export function MainContent(): React.JSX.Element {
                 </button>
 
                 <button
-                  onClick={() => { setActiveTab('scheduler'); setOpenDropdown(null) }}
+                  onClick={() => {
+                    setActiveTab('scheduler')
+                    updateSettings({ menuDefaultAutomation: 'scheduler' })
+                    setOpenDropdown(null)
+                  }}
                   className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all ${
                     activeTab === 'scheduler' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'text-zinc-200 hover:bg-zinc-800/80 hover:text-white border border-transparent'
                   }`}
@@ -257,26 +353,52 @@ export function MainContent(): React.JSX.Element {
             )}
           </div>
 
-          {/* 3. Group 2: ⚡ Terminal & Máy Chủ (Terminal, Máy chủ SSH) */}
-          <div className="relative">
-            <button
-              onClick={() => setOpenDropdown(openDropdown === 'terminal' ? null : 'terminal')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+          {/* 3. Group 2: 📟 Terminal & Máy Chủ (Split-Button: Terminal, Quản lý SSH, Quản lý Docker) */}
+          <div className="relative inline-flex items-center">
+            <div
+              className={`inline-flex items-stretch rounded-xl border transition-all shadow-sm ${
                 isTerminalActive
-                  ? 'bg-zinc-800 text-zinc-100 border border-zinc-700 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-transparent'
+                  ? 'border-emerald-500/40 bg-zinc-800/90 text-zinc-100 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
+                  : 'border-zinc-800/80 bg-zinc-900/50 hover:border-zinc-700/80 text-zinc-400'
               }`}
             >
-              <SquareTerminal size={14} className={isTerminalActive ? 'text-emerald-400' : 'text-zinc-400'} />
-              <span>
-                {activeTab === 'ssh'
-                  ? t('tabs.ssh')
-                  : activeTab === 'docker'
-                  ? t('tabs.docker')
-                  : t('tabs.terminal')}
-              </span>
-              <ChevronDown size={12} className={`text-zinc-500 transition-transform ${openDropdown === 'terminal' ? 'rotate-180 text-emerald-400' : ''}`} />
-            </button>
+              {/* Left Action: Click vào là đến thẳng chức năng mặc định (Terminal / SSH / Docker) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab(defaultTerminal)
+                  setOpenDropdown(null)
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-l-xl transition-all cursor-pointer whitespace-nowrap ${
+                  isTerminalActive
+                    ? 'text-emerald-300 hover:text-emerald-200'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+                }`}
+                title={`Mở ${termInfo.title} (Click vào thẳng chức năng)`}
+              >
+                <TermIcon size={14} className={isTerminalActive ? termInfo.color : 'text-zinc-400'} />
+                <span>{termInfo.title}</span>
+              </button>
+
+              {/* Right Action: Mũi tên để mở danh sách chọn & thay đổi mặc định */}
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'terminal' ? null : 'terminal')}
+                className={`px-1.5 py-1.5 flex items-center justify-center rounded-r-xl border-l transition-all cursor-pointer ${
+                  isTerminalActive
+                    ? 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
+                    : 'border-zinc-800/80 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60'
+                }`}
+                title="Chọn Terminal / SSH / Docker & đặt làm mặc định"
+              >
+                <ChevronDown
+                  size={12}
+                  className={`transition-transform duration-150 ${
+                    openDropdown === 'terminal' ? 'rotate-180 text-emerald-400' : ''
+                  }`}
+                />
+              </button>
+            </div>
 
             {openDropdown === 'terminal' && (
               <div className="absolute left-0 top-full mt-1.5 w-64 bg-zinc-950/98 border border-zinc-700/80 rounded-2xl p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.5)] z-50 animate-in fade-in-50 slide-in-from-top-1 duration-150 backdrop-blur-xl space-y-0.5">
@@ -284,7 +406,11 @@ export function MainContent(): React.JSX.Element {
                   <span className="text-[9px] uppercase tracking-widest font-bold text-zinc-500">{t('dropdowns.serversTitle')}</span>
                 </div>
                 <button
-                  onClick={() => { setActiveTab('terminal'); setOpenDropdown(null) }}
+                  onClick={() => {
+                    setActiveTab('terminal')
+                    updateSettings({ menuDefaultTerminal: 'terminal' })
+                    setOpenDropdown(null)
+                  }}
                   className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all ${
                     activeTab === 'terminal' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'text-zinc-200 hover:bg-zinc-800/80 hover:text-white border border-transparent'
                   }`}
@@ -299,7 +425,11 @@ export function MainContent(): React.JSX.Element {
                 <div className="mx-2 my-1 border-t border-zinc-800/60" />
 
                 <button
-                  onClick={() => { setActiveTab('ssh'); setOpenDropdown(null) }}
+                  onClick={() => {
+                    setActiveTab('ssh')
+                    updateSettings({ menuDefaultTerminal: 'ssh' })
+                    setOpenDropdown(null)
+                  }}
                   className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all ${
                     activeTab === 'ssh' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'text-zinc-200 hover:bg-zinc-800/80 hover:text-white border border-transparent'
                   }`}
@@ -314,7 +444,11 @@ export function MainContent(): React.JSX.Element {
                 <div className="mx-2 my-1 border-t border-zinc-800/60" />
 
                 <button
-                  onClick={() => { setActiveTab('docker'); setOpenDropdown(null) }}
+                  onClick={() => {
+                    setActiveTab('docker')
+                    updateSettings({ menuDefaultTerminal: 'docker' })
+                    setOpenDropdown(null)
+                  }}
                   className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all ${
                     activeTab === 'docker' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'text-zinc-200 hover:bg-zinc-800/80 hover:text-white border border-transparent'
                   }`}
@@ -328,20 +462,56 @@ export function MainContent(): React.JSX.Element {
             )}
           </div>
 
-          {/* 4. Group 3: 📊 Hệ Thống & Tài Nguyên (Tài nguyên, Kho lệnh) */}
-          <div className="relative">
-            <button
-              onClick={() => setOpenDropdown(openDropdown === 'system' ? null : 'system')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+          {/* 4. Group 3: 📊 Hệ Thống & Tài Nguyên (Split-Button: Tài nguyên, Kho lệnh) */}
+          <div className="relative inline-flex items-center">
+            <div
+              className={`inline-flex items-stretch rounded-xl border transition-all shadow-sm ${
                 isSystemActive
-                  ? 'bg-zinc-800 text-zinc-100 border border-zinc-700 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-transparent'
+                  ? 'border-emerald-500/40 bg-zinc-800/90 text-zinc-100 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
+                  : 'border-zinc-800/80 bg-zinc-900/50 hover:border-zinc-700/80 text-zinc-400'
               }`}
             >
-              <Activity size={14} className={isSystemActive ? 'text-emerald-400' : 'text-zinc-400'} />
-              <span>{t('tabs.systemGroup')}</span>
-              <ChevronDown size={12} className={`text-zinc-500 transition-transform ${openDropdown === 'system' ? 'rotate-180 text-emerald-400' : ''}`} />
-            </button>
+              {/* Left Action: Click vào là đến thẳng chức năng mặc định (Monitor / Snippet Hub) */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (defaultSystem === 'hub') {
+                    setHubOpen(true)
+                  } else {
+                    setActiveTab('monitor')
+                  }
+                  setOpenDropdown(null)
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-l-xl transition-all cursor-pointer whitespace-nowrap ${
+                  isSystemActive
+                    ? 'text-emerald-300 hover:text-emerald-200'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+                }`}
+                title={`Mở ${sysInfo.title} (Click vào thẳng chức năng)`}
+              >
+                <SysIcon size={14} className={isSystemActive ? sysInfo.color : 'text-zinc-400'} />
+                <span>{sysInfo.title}</span>
+              </button>
+
+              {/* Right Action: Mũi tên để mở danh sách chọn & thay đổi mặc định */}
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'system' ? null : 'system')}
+                className={`px-1.5 py-1.5 flex items-center justify-center rounded-r-xl border-l transition-all cursor-pointer ${
+                  isSystemActive
+                    ? 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
+                    : 'border-zinc-800/80 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60'
+                }`}
+                title="Chọn Giám sát / Kho lệnh & đặt làm mặc định"
+              >
+                <ChevronDown
+                  size={12}
+                  className={`transition-transform duration-150 ${
+                    openDropdown === 'system' ? 'rotate-180 text-emerald-400' : ''
+                  }`}
+                />
+              </button>
+            </div>
 
             {openDropdown === 'system' && (
               <div className="absolute left-0 top-full mt-1.5 w-64 bg-zinc-950/98 border border-zinc-700/80 rounded-2xl p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.5)] z-50 animate-in fade-in-50 slide-in-from-top-1 duration-150 backdrop-blur-xl space-y-0.5">
@@ -349,7 +519,11 @@ export function MainContent(): React.JSX.Element {
                   <span className="text-[9px] uppercase tracking-widest font-bold text-zinc-500">{t('dropdowns.systemTitle')}</span>
                 </div>
                 <button
-                  onClick={() => { setActiveTab('monitor'); setOpenDropdown(null) }}
+                  onClick={() => {
+                    setActiveTab('monitor')
+                    updateSettings({ menuDefaultSystem: 'monitor' })
+                    setOpenDropdown(null)
+                  }}
                   className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all ${
                     activeTab === 'monitor' || activeTab === 'ports' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'text-zinc-200 hover:bg-zinc-800/80 hover:text-white border border-transparent'
                   }`}
@@ -364,7 +538,11 @@ export function MainContent(): React.JSX.Element {
                 <div className="mx-2 my-1 border-t border-zinc-800/60" />
 
                 <button
-                  onClick={() => { setHubOpen(true); setOpenDropdown(null) }}
+                  onClick={() => {
+                    setHubOpen(true)
+                    updateSettings({ menuDefaultSystem: 'hub' })
+                    setOpenDropdown(null)
+                  }}
                   className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all text-zinc-200 hover:bg-zinc-800/80 hover:text-white border border-transparent"
                 >
                   <div className="flex items-center gap-2.5">

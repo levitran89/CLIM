@@ -1,3 +1,5 @@
+export type ShellType = 'powershell' | 'pwsh' | 'cmd' | 'wsl' | 'ubuntu' | 'gitbash' | string
+
 export interface Command {
   id: string
   name: string
@@ -5,7 +7,7 @@ export interface Command {
   description?: string
   category: string
   workingDirectory?: string
-  shell?: 'powershell' | 'cmd' | 'wsl'
+  shell?: ShellType
   tags: string[]
   color?: string
   keybind?: string
@@ -17,7 +19,7 @@ export interface Command {
 export interface TerminalSession {
   id: string
   title: string
-  shell: 'powershell' | 'cmd' | 'wsl'
+  shell: ShellType
   workingDirectory: string
   pid?: number
   status: 'running' | 'stopped' | 'error'
@@ -33,7 +35,7 @@ export interface TerminalSession {
 }
 
 export interface CreateTerminalOptions {
-  shell?: 'powershell' | 'cmd' | 'wsl'
+  shell?: ShellType
   cwd?: string
   title?: string
   commandId?: string
@@ -79,6 +81,7 @@ export interface SequenceStep {
   id: string
   name?: string
   command: string
+  delaySeconds?: number
 }
 
 /** Cách chạy khi nhấn Play trên dãy lệnh */
@@ -91,7 +94,7 @@ export interface CommandSequence {
   category: string
   steps: SequenceStep[]
   workingDirectory?: string
-  shell?: 'powershell' | 'cmd' | 'wsl'
+  shell?: ShellType
   tags: string[]
   /** none = không chạy; first = chạy lệnh đầu; all = chạy tất cả (mỗi lệnh 1 terminal) */
   runMode?: SequenceRunMode
@@ -132,6 +135,7 @@ export interface ScheduledTask {
   lastStatus?: 'success' | 'failed' | 'running'
   notifyOnComplete: boolean
   webhookEnabled: boolean
+  customCommand?: string // Mã lệnh thực thi riêng cho lịch tự động này (không làm đổi lệnh gốc)
   createdAt: number
 }
 
@@ -204,6 +208,8 @@ export type IpcApi = {
     selectFile: (options?: { title?: string; filters?: { name: string; extensions: string[] }[] }) => Promise<string | null>
     getPorts: () => Promise<PortInfo[]>
     killPort: (pid: number) => Promise<{ success: boolean; error?: string; requiresAdmin?: boolean }>
+    openExternal: (url: string) => Promise<boolean>
+    openLicenseStudio: () => Promise<boolean>
   }
   sequences: {
     list: () => Promise<CommandSequence[]>

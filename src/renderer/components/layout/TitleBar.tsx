@@ -4,10 +4,12 @@ import { Minus, Square, X, Info, Globe } from 'lucide-react'
 import logoSvg from '@/assets/logo.svg'
 import { AboutModal } from '@/components/about/AboutModal'
 import { useTranslation } from '@/stores/i18n-store'
+import { useLicenseStore } from '@/stores/license-store'
 
 export function TitleBar(): React.JSX.Element {
   const [aboutOpen, setAboutOpen] = useState(false)
   const { language, setLanguage, t } = useTranslation()
+  const { isPro } = useLicenseStore()
   return (
     <div className="flex items-center h-9 bg-zinc-900/90 border-b border-zinc-800/50 select-none backdrop-blur-xl"
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
@@ -25,9 +27,11 @@ export function TitleBar(): React.JSX.Element {
         <span className="text-xs font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 group-hover:from-emerald-300 group-hover:to-cyan-300 transition-all">
           CLIM
         </span>
-        <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">
-          v1.4.0
-        </span>
+        {isPro && (
+          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-extrabold bg-gradient-to-r from-amber-500/25 to-yellow-500/25 text-amber-300 border border-amber-500/40 tracking-wider shadow-sm">
+            PRO
+          </span>
+        )}
       </div>
 
       {/* Spacer */}
@@ -69,7 +73,7 @@ export function TitleBar(): React.JSX.Element {
           variant="ghost"
           size="icon"
           className="h-9 w-11 rounded-none text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
-          onClick={() => window.api.window.minimize()}
+          onClick={() => window.api?.window?.minimize()}
         >
           <Minus size={14} />
         </Button>
@@ -77,7 +81,7 @@ export function TitleBar(): React.JSX.Element {
           variant="ghost"
           size="icon"
           className="h-9 w-11 rounded-none text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
-          onClick={() => window.api.window.maximize()}
+          onClick={() => window.api?.window?.maximize()}
         >
           <Square size={11} />
         </Button>
@@ -85,7 +89,7 @@ export function TitleBar(): React.JSX.Element {
           variant="ghost"
           size="icon"
           className="h-9 w-11 rounded-none text-zinc-400 hover:text-white hover:bg-red-600"
-          onClick={() => window.api.window.close()}
+          onClick={() => window.api?.window?.close()}
         >
           <X size={14} />
         </Button>

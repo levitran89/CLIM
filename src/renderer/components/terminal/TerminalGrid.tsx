@@ -6,7 +6,6 @@ import { TerminalPanel } from './TerminalPanel'
 import { TerminalTabs } from './TerminalTabs'
 import { SequenceRunnerPanel } from '@/components/sequences/SequenceRunnerPanel'
 import { Terminal as TerminalIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/stores/i18n-store'
 
 export function TerminalGrid(): React.JSX.Element {
@@ -17,32 +16,65 @@ export function TerminalGrid(): React.JSX.Element {
 
   const foregroundSessions = sessions.filter((s) => !s.isBackground)
 
-  const getVisibleSessions = (): typeof foregroundSessions => {
+  // Determine which sessions are currently visible based on splitMode
+  const getVisibleSessionIds = (): Set<string> => {
+    const visibleIds = new Set<string>()
     if (splitMode === 'none') {
       const active = foregroundSessions.find((s) => s.id === activeSessionId)
-      return active ? [active] : foregroundSessions[0] ? [foregroundSessions[0]] : []
+      if (active) {
+        visibleIds.add(active.id)
+      } else if (foregroundSessions[0]) {
+        visibleIds.add(foregroundSessions[0].id)
+      }
+    } else {
+      // Split mode: first 2 foreground sessions
+      foregroundSessions.slice(0, 2).forEach((s) => visibleIds.add(s.id))
     }
-    return foregroundSessions.slice(0, 2)
+    return visibleIds
   }
 
-  const visibleSessions = getVisibleSessions()
+  const visibleSessionIds = getVisibleSessionIds()
 
   const gridClass =
     splitMode === 'vertical'
-      ? 'grid grid-cols-2 gap-1'
+      ? 'grid grid-cols-2 gap-1.5'
       : splitMode === 'horizontal'
-        ? 'grid grid-rows-2 gap-1'
-        : ''
+        ? 'grid grid-rows-2 gap-1.5'
+        : 'flex flex-col'
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#0c0c0f]">
       <TerminalTabs />
       <div className="flex flex-1 min-h-0">
         {activeRun && <SequenceRunnerPanel />}
 
-        <div className="flex-1 min-h-0 flex flex-col">
-          {foregroundSessions.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-zinc-500 p-4">
+        <div className="relative flex-1 min-h-0 flex flex-col">
+          {/* Duy trì toàn bộ sessions trong DOM (kể cả terminal chạy ngầm) để bảo toàn 100% buffer */}
+          <div className={`relative flex-1 min-h-0 p-1.5 ${splitMode === 'none' ? 'w-full h-full' : gridClass}`}>
+            {sessions.map((session) => {
+              const isVisible = !session.isBackground && visibleSessionIds.has(session.id)
+              return (
+                <div
+                  key={session.id}
+                  className={`min-h-0 min-w-0 ${
+                    isVisible
+                      ? 'relative w-full h-full flex-1'
+                      : 'absolute inset-0 w-full h-full pointer-events-none'
+                  }`}
+                  style={{
+                    visibility: isVisible ? 'visible' : 'hidden',
+                    zIndex: isVisible ? 10 : 0
+                  }}
+                >
+                  <TerminalPanel sessionId={session.id} isVisible={isVisible} />
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Hiển thị màn hình chờ khi không có tab nào ở chế độ foreground */}
+          {foregroundSessions.length === 0 && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 text-zinc-500 p-4 bg-[#0c0c0f]">
               <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800/80 shadow-md">
                 <TerminalIcon size={36} className="text-zinc-500" />
               </div>
@@ -66,14 +98,6 @@ export function TerminalGrid(): React.JSX.Element {
                   {language === 'en' ? `Open Terminal (${defaultShell.toUpperCase()})` : `Mở Terminal (${defaultShell.toUpperCase()})`}
                 </span>
               </button>
-            </div>
-          ) : (
-            <div className={`flex-1 min-h-0 p-1 ${gridClass}`}>
-              {visibleSessions.map((session) => (
-                <div key={session.id} className="min-h-0 min-w-0 h-full">
-                  <TerminalPanel sessionId={session.id} />
-                </div>
-              ))}
             </div>
           )}
         </div>

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
-import type { KeybindingMap } from '@shared/types'
+import type { KeybindingMap, ShellType } from '@shared/types'
 
-export type ShellType = 'powershell' | 'cmd' | 'wsl'
+export type { ShellType }
 export type CursorStyle = 'block' | 'bar' | 'underline'
 export type AppTheme = 'dark-zinc' | 'dark-slate' | 'amoled'
 export type AccentColor = 'emerald' | 'cyan' | 'violet' | 'rose' | 'amber' | 'blue'
@@ -52,6 +52,9 @@ export interface AppSettings {
   systemLogLayoutWidth: 'centered' | 'full'
   dashboardViewMode: 'full' | 'compact'
   dashboardGrouped: boolean
+  menuDefaultAutomation: 'profiles' | 'commands' | 'sequences' | 'scheduler'
+  menuDefaultTerminal: 'terminal' | 'ssh' | 'docker'
+  menuDefaultSystem: 'monitor' | 'hub'
 }
 
 const SETTINGS_KEY = 'clim-app-settings'
@@ -84,7 +87,10 @@ const defaultSettings: AppSettings = {
   systemLogColumns: 1,
   systemLogLayoutWidth: 'full',
   dashboardViewMode: 'full',
-  dashboardGrouped: false
+  dashboardGrouped: false,
+  menuDefaultAutomation: 'commands',
+  menuDefaultTerminal: 'terminal',
+  menuDefaultSystem: 'monitor'
 }
 
 interface SettingsStore {

@@ -67,7 +67,9 @@ const api: IpcApi = {
     selectFile: (options?: { title?: string; filters?: { name: string; extensions: string[] }[] }) =>
       ipcRenderer.invoke('system:selectFile', options),
     getPorts: () => ipcRenderer.invoke('system:getPorts'),
-    killPort: (pid: number) => ipcRenderer.invoke('system:killPort', pid)
+    killPort: (pid: number) => ipcRenderer.invoke('system:killPort', pid),
+    openExternal: (url: string) => ipcRenderer.invoke('system:openExternal', url),
+    openLicenseStudio: () => ipcRenderer.invoke('system:openLicenseStudio')
   },
 
   sequences: {

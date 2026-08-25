@@ -46,6 +46,13 @@ import {
 } from 'lucide-react'
 import type { AppTab } from '@/components/layout/MainContent'
 import type { Command } from '@shared/types'
+import { cn } from '@/lib/utils'
+
+const shellColors: Record<string, string> = {
+  powershell: 'text-blue-400',
+  cmd: 'text-amber-400',
+  wsl: 'text-orange-400'
+}
 
 interface DashboardOverviewProps {
   onNavigateTab: (tab: AppTab) => void
@@ -148,48 +155,16 @@ export function DashboardOverview({
             <h1 className="text-base sm:text-lg font-bold text-zinc-100 flex items-center gap-2">
               <span>{t('dashboard.title')}</span>
               <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px] font-mono">
-                CLIM Hub v1.5
+                CLIM Hub
               </Badge>
             </h1>
-            {!isCompact && (
-              <p className="text-xs text-zinc-400 mt-0.5">
-                {t('dashboard.subtitle')}
-              </p>
-            )}
+            <p className="text-xs text-zinc-400 mt-0.5">
+              {t('dashboard.subtitle')}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* View Mode Switcher */}
-          <div className="flex items-center gap-1 bg-zinc-900 p-0.5 rounded-lg border border-zinc-800 shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-7 w-7 ${
-                !isCompact
-                  ? 'text-emerald-400 bg-zinc-800 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-              onClick={toggleCompactView}
-              title={language === 'en' ? 'Full detailed layout mode' : 'Chế độ chi tiết đầy đủ'}
-            >
-              <LayoutGrid size={13} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-7 w-7 ${
-                isCompact
-                  ? 'text-emerald-400 bg-zinc-800 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-              onClick={toggleCompactView}
-              title={language === 'en' ? 'Compact view mode' : 'Chế độ thu gọn (Compact Mode)'}
-            >
-              <List size={13} />
-            </Button>
-          </div>
-
           <Button
             size="sm"
             onClick={onOpenPalette}
@@ -446,10 +421,10 @@ export function DashboardOverview({
             </div>
 
             {isGrouped ? (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {/* Nhóm 1: ⚙️ Tự Động Hóa (Automation) */}
-                <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-wider px-0.5">
                     <Zap size={14} />
                     <span>{t('tabs.automationGroup')}</span>
                   </div>
@@ -537,8 +512,8 @@ export function DashboardOverview({
                 </div>
 
                 {/* Nhóm 2: 🖥️ Terminal & Máy Chủ (Terminal & Servers) */}
-                <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-bold text-purple-400 uppercase tracking-wider">
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-purple-400 uppercase tracking-wider px-0.5">
                     <SquareTerminal size={14} />
                     <span>{t('tabs.serversGroup')}</span>
                   </div>
@@ -606,8 +581,8 @@ export function DashboardOverview({
                 </div>
 
                 {/* Nhóm 3: 📊 Hệ Thống & Tài Nguyên (System & Resources) */}
-                <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 uppercase tracking-wider px-0.5">
                     <Activity size={14} />
                     <span>{t('tabs.systemGroup')}</span>
                   </div>
@@ -902,53 +877,116 @@ export function DashboardOverview({
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {favoriteCommands.map((cmd) => {
-                  const runningSession = sessions.find((s) => s.title === cmd.name || s.title.includes(cmd.name))
+                  const runningSession = sessions.find(
+                    (s) => (s.commandId === cmd.id || s.title === cmd.name || s.title.includes(cmd.name)) && s.status === 'running'
+                  )
+                  const isRunning = !!runningSession
 
                   return (
                     <div
                       key={cmd.id}
-                      className="px-3.5 py-2.5 rounded-xl bg-zinc-900/80 border border-zinc-800/80 hover:bg-gradient-to-r hover:from-emerald-950/40 hover:via-zinc-900 hover:to-zinc-900 hover:border-emerald-500/60 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all duration-200 shadow-sm flex items-center justify-between gap-3 group"
+                      className={cn(
+                        'group p-3 rounded-lg transition-all duration-150 border cursor-pointer relative',
+                        isRunning
+                          ? 'bg-gradient-to-r from-emerald-950/30 to-zinc-900/90 border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30'
+                          : 'bg-zinc-950/70 border-zinc-800/80 hover:bg-zinc-900/90 hover:border-zinc-700/80 hover:shadow-sm'
+                      )}
                     >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="font-bold text-xs text-zinc-100 group-hover:text-emerald-300 transition-colors truncate">
-                            {cmd.name}
-                          </span>
-                          {cmd.category && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-zinc-950 text-zinc-400 border border-zinc-800 shrink-0">
-                              {cmd.category}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0" onClick={() => handleRunCommand(cmd)}>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Terminal
+                              size={15}
+                              className={cn(
+                                'shrink-0',
+                                isRunning ? 'text-emerald-400' : shellColors[cmd.shell || 'powershell'] || 'text-blue-400'
+                              )}
+                            />
+                            <span
+                              className={cn(
+                                'text-sm font-bold truncate',
+                                isRunning ? 'text-emerald-100' : 'text-zinc-100'
+                              )}
+                            >
+                              {cmd.name}
                             </span>
+                            {cmd.category && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-zinc-900 text-zinc-400 border border-zinc-800 shrink-0">
+                                {cmd.category}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2 mt-1.5">
+                            {isRunning && (
+                              <span
+                                className={cn(
+                                  'shrink-0 text-xs px-2 py-0.5 rounded-md font-semibold',
+                                  runningSession?.isBackground
+                                    ? 'bg-amber-500/25 text-amber-300'
+                                    : 'bg-emerald-500/30 text-emerald-300'
+                                )}
+                              >
+                                {runningSession?.isBackground
+                                  ? (language === 'en' ? 'Background' : 'Chạy ngầm')
+                                  : (language === 'en' ? 'Running' : 'Đang chạy')}
+                              </span>
+                            )}
+                            <p
+                              className={cn(
+                                'text-xs sm:text-sm font-mono truncate flex-1',
+                                isRunning ? 'text-emerald-300/80 font-medium' : 'text-zinc-400'
+                              )}
+                            >
+                              {cmd.command}
+                            </p>
+                          </div>
+
+                          {(cmd.tags || []).length > 0 && (
+                            <div className="flex gap-1.5 mt-2 flex-wrap">
+                              {(cmd.tags || []).slice(0, 3).map((tag) => (
+                                <Badge
+                                  key={tag}
+                                  variant="secondary"
+                                  className="text-[10px] px-1.5 py-0.2 h-4.5 bg-zinc-800 text-zinc-300 border-zinc-700/60 font-medium"
+                                >
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400/90 truncate bg-zinc-950/80 px-2 py-0.5 rounded border border-zinc-800/80">
-                          <span className="text-zinc-500 select-none">$</span>
-                          <span className="truncate">{cmd.command}</span>
-                        </div>
-                      </div>
 
-                      <div className="shrink-0 flex items-center gap-1.5">
-                        {runningSession ? (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleStopCommand(cmd, runningSession.id)}
-                            className="h-7.5 px-2.5 text-xs bg-rose-600/20 text-rose-300 border border-rose-500/30 hover:bg-rose-600 hover:text-white gap-1 cursor-pointer"
-                            title={t('dashboard.stop')}
-                          >
-                            <Square size={11} />
-                            <span>{t('dashboard.stop')}</span>
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => handleRunCommand(cmd)}
-                            className="h-7.5 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold gap-1 shadow-sm cursor-pointer"
-                            title={t('dashboard.run')}
-                          >
-                            <Play size={11} />
-                            <span>{t('dashboard.run')}</span>
-                          </Button>
-                        )}
+                        <div className="shrink-0 flex items-center gap-1">
+                          {isRunning ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleStopCommand(cmd, runningSession.id)
+                              }}
+                              className="h-7 px-2.5 text-xs bg-rose-500/15 hover:bg-rose-600 text-rose-400 hover:text-white font-semibold border border-rose-500/40 hover:border-rose-400 shadow-sm rounded-md transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 group/stop"
+                              title={t('dashboard.stop')}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse shrink-0" />
+                              <Square size={10} className="fill-current" />
+                              <span>{language === 'en' ? 'Stop' : 'Dừng'}</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRunCommand(cmd)
+                              }}
+                              className="h-7 px-2.5 text-xs bg-emerald-500/15 hover:bg-emerald-500 text-emerald-300 hover:text-zinc-950 font-semibold border border-emerald-500/35 hover:border-emerald-400 shadow-sm rounded-md transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 group/run"
+                              title={t('dashboard.run')}
+                            >
+                              <Play size={11} className="fill-current group-hover/run:scale-110 transition-transform" />
+                              <span>{language === 'en' ? 'Run' : 'Chạy'}</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )
